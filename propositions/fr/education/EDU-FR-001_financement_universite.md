@@ -1,9 +1,12 @@
 ---
-id: EDU-001
-domaine: education
-titre: "Gratuité totale de l'université publique"
+id: EDU-FR-001
+country: fr
+domain: education
+language: fr
+
+title: "Gratuité totale de l'université publique"
 status: draft
-auteur: communauté
+author: communauté
 date: 2026-05-07
 sources:
   - url: https://www.enseignementsup-recherche.gouv.fr/

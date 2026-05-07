@@ -12,7 +12,9 @@ router = APIRouter()
 
 class PropositionCreate(BaseModel):
     id: str
+    country: str  # ISO 3166-1 alpha-2 or "global"
     domain: str
+    language: str = "en"
     title: str
     summary: Optional[str] = None
     content: Optional[str] = None
@@ -26,11 +28,14 @@ class VoteCreate(BaseModel):
 
 @router.get("/")
 async def list_propositions(
+    country: Optional[str] = None,
     domain: Optional[str] = None,
     status: Optional[str] = None,
     db: AsyncSession = Depends(get_db),
 ):
     query = select(Proposition)
+    if country:
+        query = query.where(Proposition.country == country)
     if domain:
         query = query.where(Proposition.domain == domain)
     if status:

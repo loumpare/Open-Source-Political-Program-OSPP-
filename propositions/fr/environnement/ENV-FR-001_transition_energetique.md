@@ -1,9 +1,12 @@
 ---
-id: ENV-001
-domaine: environnement
-titre: "100% énergies renouvelables d'ici 2045"
+id: ENV-FR-001
+country: fr
+domain: environnement
+language: fr
+
+title: "100% énergies renouvelables d'ici 2045"
 status: draft
-auteur: communauté
+author: communauté
 date: 2026-05-07
 sources:
   - url: https://www.rte-france.com/analyses-tendances-et-prospectives/bilan-previsionnel-2050

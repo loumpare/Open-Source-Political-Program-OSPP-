@@ -16,8 +16,10 @@ class PropositionStatus(str, enum.Enum):
 class Proposition(Base):
     __tablename__ = "propositions"
 
-    id = Column(String, primary_key=True)  # e.g. ECO-001
+    id = Column(String, primary_key=True)  # e.g. ECO-FR-001
+    country = Column(String(10), nullable=False, index=True)  # ISO 3166-1 alpha-2 or "global"
     domain = Column(String(50), nullable=False, index=True)
+    language = Column(String(10), default="en")
     title = Column(String(255), nullable=False)
     summary = Column(Text)
     content = Column(Text)

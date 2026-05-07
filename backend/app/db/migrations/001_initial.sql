@@ -5,8 +5,10 @@ CREATE TYPE proposition_status AS ENUM ('draft', 'discussion', 'vote', 'adopte',
 CREATE TYPE simulation_status AS ENUM ('pending', 'running', 'completed', 'failed');
 
 CREATE TABLE IF NOT EXISTS propositions (
-    id VARCHAR(20) PRIMARY KEY,
+    id VARCHAR(25) PRIMARY KEY,
+    country VARCHAR(10) NOT NULL DEFAULT 'global',
     domain VARCHAR(50) NOT NULL,
+    language VARCHAR(10) NOT NULL DEFAULT 'en',
     title VARCHAR(255) NOT NULL,
     summary TEXT,
     content TEXT,
@@ -16,6 +18,7 @@ CREATE TABLE IF NOT EXISTS propositions (
     updated_at TIMESTAMP DEFAULT NOW()
 );
 
+CREATE INDEX idx_propositions_country ON propositions(country);
 CREATE INDEX idx_propositions_domain ON propositions(domain);
 CREATE INDEX idx_propositions_status ON propositions(status);
 

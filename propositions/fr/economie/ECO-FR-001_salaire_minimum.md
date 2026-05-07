@@ -1,9 +1,11 @@
 ---
-id: ECO-001
-domaine: economie
-titre: "Revalorisation du SMIC à 1600€ net"
+id: ECO-FR-001
+country: fr
+domain: economie
+title: "Revalorisation du SMIC à 1600€ net"
+language: fr
 status: discussion
-auteur: communauté
+author: communauté
 date: 2026-05-07
 sources:
   - url: https://www.insee.fr/fr/statistiques/salaires

@@ -1,9 +1,12 @@
 ---
-id: SOC-001
-domaine: social
-titre: "Retraite à 62 ans avec pension minimale garantie"
+id: SOC-FR-001
+country: fr
+domain: social
+language: fr
+
+title: "Retraite à 62 ans avec pension minimale garantie"
 status: draft
-auteur: communauté
+author: communauté
 date: 2026-05-07
 sources:
   - url: https://www.cor-retraites.fr/

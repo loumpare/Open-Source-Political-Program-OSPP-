@@ -1,32 +1,63 @@
-# Sources de Données
+# Data Sources
 
-## Sondages & attitudes électorales
+## Polls & Electoral Attitudes
 
-| Source | Description | Accès |
-|--------|-------------|-------|
-| IFOP | Leader sondages FR | https://www.ifop.com |
-| CEVIPOF | Panel attitudes Science Po | https://www.sciencespo.fr/cevipof |
-| INSEE | Démographie & emploi | https://www.insee.fr |
+### France
+| Source | Description |
+|--------|-------------|
+| IFOP | Leading FR pollster |
+| CEVIPOF | Science Po attitude panel |
+| INSEE | Demographics & employment |
 
-## Données calibration (comparables)
+### United States
+| Source | Description |
+|--------|-------------|
+| Pew Research | Political values & attitudes |
+| ANES | American National Election Studies |
+| BLS | Bureau of Labor Statistics |
+
+### Germany
+| Source | Description |
+|--------|-------------|
+| ALLBUS | German General Social Survey |
+| Destatis | Federal Statistics Office |
+
+### Comparative / Calibration
+| Source | Description |
+|--------|-------------|
+| Volebny Kompas | 134,000+ Slovak voters, 39 issues |
+| AUTNES | Austrian panel 2017-2024 |
+| PES 2024 | 8,124 respondents US Senate elections |
+| Eurobarometer | EU-wide opinion surveys |
+| World Values Survey | Global values & beliefs |
+| ISSP | International Social Survey Programme |
+
+## Political Positions & Manifestos
 
 | Source | Description |
 |--------|-------------|
-| Volebny Kompas | 134 000+ votants slovaques, 39 enjeux |
-| AUTNES | Panel autrichien 2017-2024 |
-| PES 2024 | 8 124 répondants élections sénatoriales US |
+| Chapel Hill Expert Survey | Comparative European party positions |
+| Manifesto Project | Party manifestos from 50+ countries |
+| Volebny Kompas Parties | 429 documented political positions |
+| Comparative Constitutions Project | Constitutional texts worldwide |
 
-## Positions politiques
+## Demographic Data
 
 | Source | Description |
 |--------|-------------|
-| Chapel Hill Expert Survey | Positions partis européens |
-| Volebny Kompas Parties | 429 positions documentées |
+| INSEE (FR) | Age, sex, region, socio-professional category |
+| Census Bureau (US) | ACS — American Community Survey |
+| Destatis (DE) | German federal statistics |
+| Eurostat | EU harmonised statistics |
+| UN World Population Prospects | Global demographic projections |
+| data.gouv.fr | French open data portal |
 
-## Résultats électoraux
+## Electoral Results
 
-| Élection | URL |
+| Election | URL |
 |----------|-----|
-| Présidentielle 2022 | https://elections.interieur.gouv.fr |
-| Législatives 2024 | https://elections.interieur.gouv.fr |
-| Européennes 2024 | https://elections.interieur.gouv.fr |
+| FR Présidentielle 2022 | https://elections.interieur.gouv.fr |
+| FR Législatives 2024 | https://elections.interieur.gouv.fr |
+| US Presidential 2024 | https://www.fec.gov |
+| DE Bundestagswahl 2025 | https://www.bundeswahlleiter.de |
+| EU Parliament 2024 | https://results.elections.europa.eu |

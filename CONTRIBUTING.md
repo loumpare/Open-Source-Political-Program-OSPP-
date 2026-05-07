@@ -1,63 +1,85 @@
-# Guide de Contribution
+# Contributing Guide
 
-## Comment proposer ou modifier une proposition
+## Adding or modifying a proposal
 
-1. **Ouvrir une Issue** décrivant la proposition ou la modification souhaitée
-2. **Discuter** avec la communauté (étiquettes : `proposition`, `données`, `simulation`)
-3. **Soumettre une PR** dans `propositions/<domaine>/`
-4. La PR est fusionnée après vote communautaire (>60% support, min 10 votes)
+1. **Open an Issue** describing the proposal or change
+2. **Discuss** with the community (labels: `proposal`, `data`, `simulation`, `country:fr`, `country:us`…)
+3. **Submit a PR** in `propositions/{country_code}/{domain}/`
+4. PR is merged after community vote (>60% support, min 10 votes)
 
-## Format d'une proposition
+## Proposal format
 
-Chaque fichier dans `propositions/` suit ce template :
+Each file in `propositions/` follows this template:
 
 ```markdown
 ---
-id: ECO-001
-domaine: economie
-titre: "Titre de la proposition"
-status: draft | discussion | vote | adopte | rejete
-auteur: @github_handle
+id: ECO-FR-001
+country: fr          # ISO 3166-1 alpha-2, or "global"
+domain: economy
+title: "Proposal title"
+status: draft | discussion | vote | adopted | rejected
+author: @github_handle
 date: YYYY-MM-DD
+language: fr         # primary language of this proposal
 sources:
   - url: https://...
     description: "Source"
 ---
 
-## Résumé
+## Summary
 
-Une phrase.
+One sentence.
 
-## Proposition
+## Proposal
 
-Texte détaillé.
+Detailed text.
 
-## Impact estimé
+## Estimated impact
 
-- Population concernée : X
-- Coût estimé : Y
-- Sources : Z
+- Population affected: X
+- Estimated cost: Y
+- Sources: Z
 
-## Résultats de simulation
+## Simulation results
 
-(rempli automatiquement après simulation Mesa)
+(filled automatically after Mesa simulation)
 ```
 
-## Domaines
+## Countries & domains
 
-| Dossier | Thèmes |
-|---------|--------|
-| `economie/` | Salaires, fiscalité, emploi, croissance |
-| `social/` | Retraites, santé, logement, inégalités |
-| `environnement/` | Énergie, transport, agriculture, biodiversité |
-| `education/` | École, université, formation professionnelle |
+Proposals are organized as `propositions/{country_code}/{domain}/`.
 
-## Contribution au code
+| Path | Examples |
+|------|---------|
+| `propositions/global/governance/` | Electoral reform, digital rights |
+| `propositions/fr/economie/` | SMIC, fiscalité |
+| `propositions/us/economy/` | Minimum wage, healthcare |
+| `propositions/de/wirtschaft/` | Mindestlohn, Rente |
+| `propositions/{cc}/{domain}/` | Any country, any domain |
 
-- Backend Python : suivre PEP 8, tests avec pytest
-- Frontend : ESLint + Prettier, composants fonctionnels React
-- Simulation : documenter les paramètres Mesa
+**Domain naming**: use the local language (e.g. `economie` for FR, `economy` for EN, `wirtschaft` for DE). This keeps proposals readable to local contributors.
+
+### Standard domains (adapt name to local language)
+
+- `economy` / `economie` / `wirtschaft`
+- `social` / `soziales`
+- `environment` / `environnement` / `umwelt`
+- `education`
+- `governance` / `gouvernance`
+- `health` / `sante` / `gesundheit`
+
+## Multi-language support
+
+- Proposals are written in the **local language** of the country
+- An English summary is encouraged but not required
+- Simulation prompts sent to Claude are auto-translated per agent profile
+
+## Code contributions
+
+- Backend Python: follow PEP 8, tests with pytest
+- Frontend: ESLint + Prettier, functional React components
+- Simulation: document Mesa parameters
 
 ## Code of Conduct
 
-Débat respectueux, basé sur les données, pas les idéologies.
+Evidence-based, respectful debate. No ad hominem, no ideology without data.
