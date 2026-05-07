@@ -118,4 +118,54 @@ Tracks every search session: what was asked, when, why, and what was found.
 
 **Next steps:**
 - [ ] Download education PDFs to Google Drive
-- [ ] Start Session 3: Environment domain (IPCC, Carbon4, UNEP, scientific orgs)
+
+---
+
+### [ENVIRONMENT] — Session 3 — 2026-05-07
+
+**Objective:** Systematic scan of environment & climate scientific literature (2016–2026). Focus: IPCC, UNEP, IPBES core reports + peer-reviewed research on energy transition, carbon pricing, adaptation costs, biodiversity, deforestation, just transition, and CDR.
+
+**Queries run:**
+1. IPCC AR6 reports (WGI, WGII, WGIII) — ipcc.ch
+2. Carbon pricing & emissions trading — NBER, IMF
+3. Energy transition, renewables costs — Nature, Science, NBER
+4. UNEP Emissions Gap Reports 2023–2025 — unep.org
+5. Biodiversity & ecosystem services — IPBES, Nature, Science
+6. Climate adaptation & economic costs — NBER, Nature
+7. Just transition, green jobs, fossil fuel workers — Nature Communications, IZA
+8. Deforestation, land use, agriculture emissions — Nature, Science
+9. Ocean & marine ecosystems — Nature, Frontiers, Annual Reviews
+10. Carbon capture & removal (CDR) — Nature Communications, PMC
+
+**Sub-domains covered:** climate science (IPCC) · emissions gap (UNEP) · carbon pricing · energy transition · adaptation & costs · biodiversity (IPBES) · deforestation · just transition · CDR
+
+**Key sources tapped:**
+- IPCC — AR6 WGI/WGII/WGIII (definitive physical & mitigation science)
+- UNEP — Emissions Gap Reports 2023–2025 (annual NDC gap tracking)
+- IPBES — Global & Regional Biodiversity Assessments (ecosystem services)
+- NBER — economics of carbon pricing, adaptation, macroeconomic impacts
+- Nature (Energy, Communications, Food, Reviews) — dominant peer-review outlet
+- Science — deforestation drivers
+- IMF Staff Climate Notes — carbon tax instrument design
+- Frontiers in Marine Science — ocean solutions
+- U Chicago journals — green job transitions
+
+**Results summary:**
+- IPCC AR6: 1.5°C likely exceeded by early 2030s without immediate deep cuts. Residual emissions require CDR of 7–9 GtCO2/yr by mid-century.
+- UNEP 2025: Current NDCs put world at ~2.6–2.8°C. Emissions still rising.
+- Carbon pricing: ETS reduced emissions 12.1%; cap-and-trade outperforms carbon tax on emission reductions. China ETS benefits exceed costs 5x.
+- Renewables: Solar & wind now cost-competitive with fossil fuels on LCOE basis. Costs declined 80–90% since 2010.
+- Climate costs: Economy committed to -19% income by 2050 independent of future emissions (Nature 2024). Extreme weather attributable costs: $143B/year.
+- Biodiversity: 1 million species threatened with extinction (IPBES 2019). 86% of deforestation driven by crop & cattle production.
+- Just transition: <1% of fossil fuel workers transition to green jobs currently. Geography & skills are primary barriers.
+- CDR: ~29,000 studies mapped via AI (3-4x more than expected). DACCS critical but not yet at scale.
+
+**Catalog entries added:** 52 documents
+**Estimated volume:** ~153 MB (incl. large IPCC/IPBES/UNEP reports)
+**Google Drive path:** `OSPP/research/environment/pdfs/`
+**Catalog file:** `research/environment/CATALOG.md`
+**Status:** complete — ready for download phase
+
+**Next steps:**
+- [ ] Download environment PDFs to Google Drive
+- [ ] Start Session 4: Social domain (inequality geography, welfare states, health)
