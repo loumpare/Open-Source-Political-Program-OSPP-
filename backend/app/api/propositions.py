@@ -1,4 +1,6 @@
 from fastapi import APIRouter, Depends, HTTPException, Request
+from slowapi import Limiter
+from slowapi.util import get_remote_address
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy import select
 from app.db.database import get_db
@@ -10,21 +12,18 @@ import html
 import re
 
 router = APIRouter()
+limiter = Limiter(key_func=get_remote_address)
 
 _ALLOWED_DOMAINS = {"economy", "education", "environment", "social", "governance"}
 _ID_RE = re.compile(r'^[A-Z]{2,6}-[A-Z]{2,10}-\d{3}$')
 
 
 def _sanitize(text: str, max_len: int = 500) -> str:
-    """Strip HTML tags and truncate."""
-    clean = html.escape(text.strip())
-    return clean[:max_len]
+    return html.escape(text.strip())[:max_len]
 
 
 def _hash_voter(voter_token: str, proposal_id: str) -> str:
-    """One-way hash: voter token + proposal_id → stored identifier.
-    The raw token never touches the DB, so even a full DB dump cannot
-    reconstruct who voted for what."""
+    """One-way hash — raw token never stored. See SECURITY.md §8."""
     return hashlib.sha256(f"{voter_token}:{proposal_id}".encode()).hexdigest()
 
 
@@ -70,14 +69,14 @@ class PropositionCreate(BaseModel):
 
 
 class VoteCreate(BaseModel):
-    voter_token: str   # anonymous UUID from client, never stored raw
+    voter_token: str
     support: int
 
     @model_validator(mode="after")
-    def validate_support(self) -> "VoteCreate":
+    def validate_fields(self) -> "VoteCreate":
         if self.support not in (1, -1):
             raise ValueError("support must be 1 or -1")
-        if len(self.voter_token) < 16 or len(self.voter_token) > 128:
+        if not (16 <= len(self.voter_token) <= 128):
             raise ValueError("invalid voter token length")
         return self
 
@@ -114,7 +113,8 @@ async def get_proposition(proposition_id: str, db: AsyncSession = Depends(get_db
 
 
 @router.post("/", status_code=201)
-async def create_proposition(data: PropositionCreate, db: AsyncSession = Depends(get_db)):
+@limiter.limit("10/hour")   # prevent proposal spam
+async def create_proposition(request: Request, data: PropositionCreate, db: AsyncSession = Depends(get_db)):
     existing = await db.execute(select(Proposition).where(Proposition.id == data.id))
     if existing.scalar_one_or_none():
         raise HTTPException(status_code=409, detail="Proposal ID already exists")
@@ -126,6 +126,7 @@ async def create_proposition(data: PropositionCreate, db: AsyncSession = Depends
 
 
 @router.post("/{proposition_id}/vote")
+@limiter.limit("5/minute")  # prevent vote flooding per IP
 async def vote(
     proposition_id: str,
     payload: VoteCreate,
@@ -135,15 +136,12 @@ async def vote(
     if not _ID_RE.match(proposition_id):
         raise HTTPException(status_code=400, detail="Invalid proposal ID format")
 
-    # Verify proposition exists
     result = await db.execute(select(Proposition).where(Proposition.id == proposition_id))
     if not result.scalar_one_or_none():
         raise HTTPException(status_code=404, detail="Proposition not found")
 
-    # Hash voter token — raw token never stored
     voter_hash = _hash_voter(payload.voter_token, proposition_id)
 
-    # One vote per token per proposal: upsert via delete + insert
     existing_vote = await db.execute(
         select(PropositionVote).where(
             PropositionVote.proposition_id == proposition_id,

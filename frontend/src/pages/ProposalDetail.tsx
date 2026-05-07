@@ -118,7 +118,7 @@ export default function ProposalDetail() {
                 </p>
               </div>
               <a
-                href={`https://github.com/loumpare/Open-Source-Political-Program-OSPP-/blob/main/propositions/${proposal.country === 'Global' ? 'global' : proposal.country === 'France' ? 'fr' : 'us'}/${proposal.domain}/${proposal.id}_${proposal.title.toLowerCase().replace(/\s+/g, '_').slice(0, 20)}.md`}
+                href={`https://github.com/loumpare/Open-Source-Political-Program-OSPP-/tree/main/propositions`}
                 target="_blank"
                 rel="noopener noreferrer"
                 className="shrink-0 inline-flex items-center gap-2 px-4 py-2.5 bg-slate-900 text-white text-sm font-medium rounded-xl hover:bg-slate-700 transition-colors"

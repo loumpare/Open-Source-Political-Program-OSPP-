@@ -136,9 +136,20 @@ Client                         Server                        Database
 - [ ] HTTPS / TLS termination at reverse proxy (nginx/Caddy)
 - [ ] Rate limiting tuned for expected traffic
 
+## Additional Fixes (pass 2)
+
+| # | Issue | Fix |
+|---|-------|-----|
+| 9 | No per-route rate limit on vote endpoint | `@limiter.limit("5/minute")` on vote; `@limiter.limit("10/hour")` on proposal create; `@limiter.limit("5/hour")` on simulation create |
+| 10 | Simulation DoS — unbounded n_agents/n_steps | n_agents capped at 100,000; n_steps capped at 50 via Pydantic validator |
+| 11 | Missing Content-Security-Policy | CSP header added in production: `default-src 'self'; script-src 'self'; style-src 'self' 'unsafe-inline' fonts.googleapis.com` |
+| 12 | ProposalDetail GitHub href with title in URL | Title removed from href; static repo link used instead |
+| 13 | Unused `import uuid` in propositions.py | Removed |
+| 14 | esbuild ≤0.24.2 (GHSA-67mh-4wv8-2f99) | Upgraded vite to v6 — `npm audit` now reports 0 vulnerabilities |
+
 ## Dependency Vulnerabilities
 
-- **esbuild ≤0.24.2** (moderate): Vite dev server allows cross-origin requests. **Only affects development.** Not present in production build. Track: https://github.com/advisories/GHSA-67mh-4wv8-2f99
+✅ **0 known vulnerabilities** — `npm audit` clean after vite v6 upgrade.
 
 ## Reporting
 
