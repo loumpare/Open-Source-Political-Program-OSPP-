@@ -1,9 +1,39 @@
 <!doctype html>
-<html lang="fr">
+<html lang="en">
   <head>
     <meta charset="UTF-8" />
-    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>Programme Politique Open Source</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover" />
+
+    <!-- Primary meta -->
+    <title>OpenPolicy — Open Source Political Program</title>
+    <meta name="description" content="Science-backed political proposals. Vote, debate, and contribute to open-source policy." />
+    <meta name="theme-color" content="#0f172a" />
+
+    <!-- PWA / installability -->
+    <link rel="manifest" href="/manifest.webmanifest" />
+    <link rel="icon" type="image/png" href="/favicon.png" />
+
+    <!-- iOS PWA — critical for "Add to Home Screen" to work properly -->
+    <meta name="apple-mobile-web-app-capable" content="yes" />
+    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
+    <meta name="apple-mobile-web-app-title" content="OpenPolicy" />
+    <link rel="apple-touch-icon" href="/apple-touch-icon.png" />
+
+    <!-- iOS splash screens (one per device size) -->
+    <link rel="apple-touch-startup-image"
+      media="screen and (device-width: 390px) and (device-height: 844px) and (-webkit-device-pixel-ratio: 3)"
+      href="/icons/icon-512x512.png" />
+
+    <!-- Android / Open Graph -->
+    <meta name="mobile-web-app-capable" content="yes" />
+    <meta property="og:type" content="website" />
+    <meta property="og:title" content="OpenPolicy — Open Source Political Program" />
+    <meta property="og:description" content="208 peer-reviewed sources. 6 proposals. 0 lobbyists." />
+    <meta property="og:image" content="/icons/icon-512x512.png" />
+    <meta name="twitter:card" content="summary_large_image" />
+    <meta name="twitter:title" content="OpenPolicy" />
+    <meta name="twitter:description" content="Science-backed political proposals. Vote and contribute on GitHub." />
+    <meta name="twitter:image" content="/icons/icon-512x512.png" />
   </head>
   <body>
     <div id="root"></div>
