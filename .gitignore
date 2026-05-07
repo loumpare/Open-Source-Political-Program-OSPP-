@@ -46,3 +46,7 @@ Thumbs.db
 # Logs
 *.log
 logs/
+
+# Research — large binary files (PDFs on Google Drive, vectorDB rebuilt locally)
+research/*/pdfs/
+research/vectordb/
