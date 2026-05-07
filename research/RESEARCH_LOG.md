@@ -72,4 +72,50 @@ Tracks every search session: what was asked, when, why, and what was found.
 **Next steps:**
 - [ ] Batch download all 61 PDFs to Google Drive
 - [ ] Run embedding pipeline on downloaded PDFs (ChromaDB)
-- [ ] Start Session 2: Education domain (psychology + clinical + human sciences)
+
+---
+
+### [EDUCATION] — Session 2 — 2026-05-07
+
+**Objective:** Systematic scan of education scientific literature (2016–2026) covering psychology, human sciences, clinical data and global reports. Goal: ground education proposals in evidence across all key sub-domains.
+
+**Queries run:**
+1. Education inequality & achievement gap — NBER, IZA, Brookings, EPI
+2. Educational psychology & cognitive development — APA, NCBI/PMC, Nature
+3. School funding & returns to education — NBER, IZA, U Chicago journals
+4. Universal preschool & early childhood education — NBER, IZA, PMC
+5. Mental health in schools & universities — NCBI, Lancet, JAMA
+6. Higher education access & completion — NBER, IZA
+7. Teacher quality & value-added — NBER, IZA, U Chicago
+8. Digital technology & AI in education — NBER, NCBI, Nature, OECD
+9. Global education reports — UNESCO GEM, World Bank, OECD PISA
+
+**Sub-domains covered:** inequality · school funding · early childhood · teacher quality · mental health · cognitive science · AI in education · global reports
+
+**Key sources tapped:**
+- NBER — economics of education (Chetty, Jackson, Hoxby)
+- IZA — international labor & education
+- PMC/NCBI — clinical & psychological research
+- APA — educational psychology peer review
+- Nature (npj Science of Learning, HSSC) — cognitive science
+- UNESCO GEM Report — global access & equity
+- OECD (PISA, Digital Education Outlook) — international comparisons
+- World Bank — learning poverty, developing countries
+
+**Results summary:**
+- Inequality: achievement gap widening; school funding gap grew 44% over a decade; +10% spending → +7.25% wages in adulthood (Jackson et al.)
+- Early childhood: Boston preschool → +8pp college enrollment, reduced incarceration. Perry Preschool effects persist into adulthood.
+- Teachers: high value-added teachers improve long-term earnings; test scores miss non-cognitive outcomes (absences, grades, suspensions).
+- Mental health: CBT most effective intervention; school-based services cost-effective and increase achievement.
+- AI in education: personalized learning benefits documented; risk of dependency without pedagogical guidance (OECD 2026).
+- Global: 53% of children in low/middle-income countries cannot read a simple story at age 10 (World Bank learning poverty). Sub-Saharan Africa: 86%.
+
+**Catalog entries added:** 47 documents
+**Estimated volume:** ~95 MB
+**Google Drive path:** `OSPP/research/education/pdfs/`
+**Catalog file:** `research/education/CATALOG.md`
+**Status:** complete — ready for download phase
+
+**Next steps:**
+- [ ] Download education PDFs to Google Drive
+- [ ] Start Session 3: Environment domain (IPCC, Carbon4, UNEP, scientific orgs)
