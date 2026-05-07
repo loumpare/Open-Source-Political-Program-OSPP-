@@ -168,4 +168,53 @@ Tracks every search session: what was asked, when, why, and what was found.
 
 **Next steps:**
 - [ ] Download environment PDFs to Google Drive
-- [ ] Start Session 4: Social domain (inequality geography, welfare states, health)
+
+---
+
+### [SOCIAL] — Session 4 — 2026-05-07
+
+**Objective:** Systematic scan of social sciences literature (2016–2026). Focus: comparative welfare states, global inequality geography (low vs high tension regions), health systems, poverty measurement, gender inequality, crime & social cohesion, migration, and housing/homelessness.
+
+**Queries run:**
+1. Welfare state comparative policy — NBER, IZA, LIS Data Center
+2. Social inequality geography, Gini coefficient — World Bank, NBER, IZA
+3. Global health systems & universal healthcare — Lancet, NEJM, WHO
+4. Poverty multidimensional index — World Bank, OPHI
+5. Gender inequality & pay gap — NBER, IZA, WEF
+6. Crime, incarceration & social cohesion — NBER, PMC/NCBI
+7. Migration & integration social outcomes — NBER, IZA
+8. Housing, homelessness & social outcomes — NBER, PMC/NCBI
+
+**Sub-domains covered:** welfare states · inequality geography · health systems · poverty · gender · crime & cohesion · migration · housing
+
+**Key sources tapped:**
+- NBER — welfare state economics (Heckman, Goldin, Landersø)
+- IZA — Nordic models, segregation, migration
+- LIS Data Center — Luxembourg Income Study (comparative income data)
+- The Lancet / Lancet Global Health — UHC quality, health financing
+- WHO — universal health coverage fact sheets
+- OPHI (Oxford Poverty & Human Development Initiative) — Global MPI
+- World Bank — Gini data, multidimensional poverty
+- PMC/NCBI — crime, incarceration, housing, homelessness clinical research
+
+**Results summary:**
+- Welfare states: Nordic countries have lowest inequality primarily via wage compression (not just redistribution). High mobility in Nordic vs low in US.
+- Inequality geography: Gini 0.25 (Eastern Europe, Nordics) to 0.55-0.60 (South Africa, LatAm). Rising Gini → rising social tension risk.
+- Health: 8M deaths/year from low-quality care. UHC coverage stalled post-2015 (1.5% → 0.5% annual gain). 10% more pooled spending → 1.4% UHC index gain.
+- Poverty: 1.1 billion multidimensionally poor (OPHI 2025). MPI = 10 indicators across health, education, living standards.
+- Gender: Gender pay gap driven by firm sorting + childbirth penalty (Denmark study). Pay transparency reduces gap.
+- Crime: Mass incarceration deepens inequality. Social cohesion → crime reduction via informal monitoring and employment networks.
+- Migration: Age at migration critical for integration outcomes. High-skilled migrants boost agglomeration. Location barrier for refugee integration.
+- Housing: Housing First reduces homelessness 88% vs treatment-first. Stable housing is foundational for health, mental health, and economic outcomes.
+
+**Catalog entries added:** 48 documents
+**Estimated volume:** ~60 MB
+**Google Drive path:** `OSPP/research/social/pdfs/`
+**Catalog file:** `research/social/CATALOG.md`
+**Status:** complete — ready for download phase
+
+**Next steps:**
+- [ ] Run `python research/pipeline.py download --domain social`
+- [ ] Run `python research/pipeline.py embed --domain social`
+- [ ] Sync all research/*/pdfs/ to Google Drive
+- [ ] Begin connecting knowledge base to proposal generation & simulation
