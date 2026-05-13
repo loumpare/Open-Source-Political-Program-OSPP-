@@ -15,7 +15,8 @@
 6. [Add or edit a proposal](#6-add-or-edit-a-proposal)
 7. [Run the research pipeline](#7-run-the-research-pipeline)
 8. [Build for production](#8-build-for-production)
-9. [Project structure](#9-project-structure)
+9. [**Deploy with Docker (recommended for sharing)**](#9-deploy-with-docker-recommended-for-sharing)
+10. [Project structure](#10-project-structure)
 
 ---
 
@@ -370,7 +371,130 @@ npm run preview
 
 ---
 
-## 9. Project structure
+## 9. Deploy with Docker (recommended for sharing)
+
+Docker Compose bundles everything — Ollama, the FastAPI backend and the React
+frontend — into a single command.  No Python or Node.js required on the target
+machine.
+
+### Prerequisites on the target machine
+
+| Tool | Install |
+|------|---------|
+| Docker Engine 24+ | <https://docs.docker.com/engine/install/> |
+| Docker Compose v2 | included with Docker Desktop; on Linux: `apt install docker-compose-plugin` |
+| Git | `apt install git` |
+
+### One-command deployment
+
+```bash
+# 1. Clone
+git clone <your-repo-url> ospp && cd ospp
+
+# 2. (Optional) adjust settings — defaults work out of the box
+cp .env.example .env
+# Edit .env if you want a different model or port
+
+# 3. Build images and start
+docker compose up --build -d
+```
+
+Open **http://\<server-ip\>** in a browser.
+
+> **First run note:** the `ollama-init` container automatically pulls
+> `qwen2.5:7b` (~4.7 GB).  This happens once; the model is cached in the
+> `ollama_data` Docker volume for future starts.
+
+### Useful commands
+
+```bash
+# Follow logs for all services
+docker compose logs -f
+
+# Follow logs for one service
+docker compose logs -f api
+
+# Restart after a code change
+docker compose up --build -d
+
+# Stop everything
+docker compose down
+
+# Stop AND delete volumes (wipes votes DB + downloaded model)
+docker compose down -v
+```
+
+### Configuration via `.env`
+
+| Variable | Default | Description |
+|----------|---------|-------------|
+| `OLLAMA_MODEL` | `qwen2.5:7b` | LLM model — use `llama3.2:3b` for faster/lighter |
+| `PORT` | `80` | Host port for the frontend |
+| `OLLAMA_URL` | `http://ollama:11434` | Override if Ollama runs on the host |
+
+### Enable GPU (NVIDIA)
+
+In `docker-compose.yml`, uncomment the `deploy` block inside the `ollama` service:
+
+```yaml
+deploy:
+  resources:
+    reservations:
+      devices:
+        - driver: nvidia
+          count: 1
+          capabilities: [gpu]
+```
+
+Also install the
+[NVIDIA Container Toolkit](https://docs.nvidia.com/datacenter/cloud-native/container-toolkit/latest/install-guide.html)
+on the host.
+
+### Use an existing host-installed Ollama
+
+If Ollama is already running on the host (e.g. you don't want it inside
+Docker), remove the `ollama` and `ollama-init` services from
+`docker-compose.yml` and set in `.env`:
+
+```
+OLLAMA_URL=http://host.docker.internal:11434
+```
+
+On Linux add `extra_hosts: ["host.docker.internal:host-gateway"]` to the
+`api` service.
+
+### Architecture inside Docker
+
+```
+Browser → :80
+          │
+     ┌────▼─────────────────────────────┐
+     │  nginx (ospp_frontend)           │
+     │  - serves /usr/share/nginx/html  │
+     │  - proxies /api/* → api:8001     │
+     └────────────────────┬─────────────┘
+                          │ /api/*
+     ┌────────────────────▼─────────────┐
+     │  FastAPI (ospp_api)  :8001       │
+     │  - Mesa simulation               │
+     │  - ChromaDB RAG                  │
+     │  - SQLite votes                  │
+     └────────────────────┬─────────────┘
+                          │ http://ollama:11434
+     ┌────────────────────▼─────────────┐
+     │  Ollama (ospp_ollama)  :11434    │
+     │  qwen2.5:7b (CPU or GPU)         │
+     └──────────────────────────────────┘
+
+Volumes:
+  ollama_data  →  /root/.ollama         (LLM weights ~4.7 GB)
+  votes_db     →  /app/research/        (SQLite votes.db)
+  ./research/vectordb  (bind-mount)     (ChromaDB index)
+```
+
+---
+
+## 10. Project structure
 
 ```
 OSPP/

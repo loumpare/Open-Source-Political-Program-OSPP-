@@ -14,8 +14,12 @@ const SCENARIOS = [
   { id: 'optimistic', label: 'Optimiste',  color: 'text-emerald-600', bg: 'bg-emerald-50 border-emerald-300' },
 ]
 
+interface LaunchParams {
+  proposalId: string; nAgents: number; years: number; scenario: string; seed: number
+}
+
 interface Props {
-  onResults: (r: unknown) => void
+  onResults: (r: unknown, params: LaunchParams) => void
   onLoading: (v: boolean) => void
 }
 
@@ -50,10 +54,11 @@ export default function SimulationLauncher({ onResults, onLoading }: Props) {
         }),
       })
       if (!res.ok) throw new Error(await res.text() || `HTTP ${res.status}`)
-      onResults(await res.json())
+      const params: LaunchParams = { proposalId, nAgents, years, scenario, seed }
+      onResults(await res.json(), params)
     } catch (e) {
       setError(e instanceof Error ? e.message : 'API inaccessible — lancez le serveur')
-      onResults(null)
+      onResults(null, { proposalId, nAgents, years, scenario, seed })
     } finally {
       setRunning(false); onLoading(false)
     }

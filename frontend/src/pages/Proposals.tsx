@@ -2,21 +2,29 @@ import { useState, useMemo } from 'react'
 import { useSearchParams } from 'react-router-dom'
 import { Search, SlidersHorizontal, X } from 'lucide-react'
 import { motion, AnimatePresence } from 'framer-motion'
-import { PROPOSALS, DOMAIN_META, RESEARCH_STATS, Domain } from '../data/proposals'
+import { PROPOSALS, DOMAIN_META, RESEARCH_STATS } from '../data/proposals'
 import ProposalCard from '../components/proposal/ProposalCard'
+import { useLanguage } from '../i18n'
 
-const COUNTRIES = ['All', ...Array.from(new Set(PROPOSALS.map(p => p.country))).sort()]
-const DOMAINS: { key: string; label: string }[] = [
-  { key: 'all', label: 'All domains' },
-  ...Object.entries(DOMAIN_META).map(([k, v]) => ({ key: k, label: `${v.icon} ${v.label}` })),
-]
+const COUNTRIES_RAW = Array.from(new Set(PROPOSALS.map(p => p.country))).sort()
 
 export default function Proposals() {
+  const { t } = useLanguage()
   const [searchParams, setSearchParams] = useSearchParams()
-  const [query, setQuery] = useState('')
+  const [query, setQuery]   = useState('')
   const [country, setCountry] = useState('All')
 
   const domainParam = searchParams.get('domain') ?? 'all'
+
+  const DOMAINS = [
+    { key: 'all', label: t.proposals.filter_all },
+    ...Object.entries(DOMAIN_META).map(([k, v]) => ({
+      key: k,
+      label: `${v.icon} ${t.domains[k as keyof typeof t.domains] ?? v.label}`,
+    })),
+  ]
+
+  const COUNTRIES = [t.proposals.filter_all, ...COUNTRIES_RAW]
 
   const setDomain = (d: string) => {
     if (d === 'all') setSearchParams({})
@@ -26,42 +34,50 @@ export default function Proposals() {
   const filtered = useMemo(() => {
     return PROPOSALS.filter(p => {
       if (domainParam !== 'all' && p.domain !== domainParam) return false
-      if (country !== 'All' && p.country !== country) return false
+      if (country !== t.proposals.filter_all && p.country !== country) return false
       if (query) {
         const q = query.toLowerCase()
         return (
           p.title.toLowerCase().includes(q) ||
           p.summary.toLowerCase().includes(q) ||
-          p.tags.some(t => t.toLowerCase().includes(q))
+          p.tags.some(tag => tag.toLowerCase().includes(q))
         )
       }
       return true
     })
-  }, [domainParam, country, query])
+  }, [domainParam, country, query, t])
 
   return (
     <div className="pt-16 max-w-6xl mx-auto px-4 sm:px-6">
       {/* Header */}
       <div className="py-12">
-        <h1 className="text-4xl font-black text-slate-900 mb-3">Proposals</h1>
+        <h1 className="text-4xl font-black text-slate-900 mb-3">
+          {t.proposals.page_title}
+        </h1>
         <p className="text-slate-500 text-lg">
-          {PROPOSALS.length} open-source policy proposals backed by {RESEARCH_STATS.sources} peer-reviewed sources.
+          {PROPOSALS.length} {t.home.stats_proposals} · {RESEARCH_STATS.sources} {t.home.stats_sources}
         </p>
       </div>
 
-      {/* Search + filters */}
+      {/* Search + country filter */}
       <div className="flex flex-col sm:flex-row gap-3 mb-6">
         <div className="relative flex-1">
           <Search size={15} className="absolute left-3.5 top-1/2 -translate-y-1/2 text-slate-400" />
           <input
             type="text"
-            placeholder="Search proposals, topics, tags…"
+            placeholder={t.proposals.search_placeholder}
             value={query}
             onChange={e => setQuery(e.target.value)}
-            className="w-full pl-9 pr-4 py-2.5 rounded-xl border border-slate-200 bg-white text-sm text-slate-900 placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-slate-900/10 focus:border-slate-400 transition-colors"
+            className="w-full pl-9 pr-4 py-2.5 rounded-xl border border-slate-200 bg-white
+                       text-sm text-slate-900 placeholder-slate-400
+                       focus:outline-none focus:ring-2 focus:ring-slate-900/10
+                       focus:border-slate-400 transition-colors"
           />
           {query && (
-            <button onClick={() => setQuery('')} className="absolute right-3 top-1/2 -translate-y-1/2 text-slate-400 hover:text-slate-700">
+            <button
+              onClick={() => setQuery('')}
+              className="absolute right-3 top-1/2 -translate-y-1/2 text-slate-400 hover:text-slate-700"
+            >
               <X size={14} />
             </button>
           )}
@@ -71,7 +87,8 @@ export default function Proposals() {
           <select
             value={country}
             onChange={e => setCountry(e.target.value)}
-            className="py-2.5 px-3 rounded-xl border border-slate-200 bg-white text-sm text-slate-700 focus:outline-none focus:ring-2 focus:ring-slate-900/10"
+            className="py-2.5 px-3 rounded-xl border border-slate-200 bg-white
+                       text-sm text-slate-700 focus:outline-none focus:ring-2 focus:ring-slate-900/10"
           >
             {COUNTRIES.map(c => <option key={c}>{c}</option>)}
           </select>
@@ -95,10 +112,10 @@ export default function Proposals() {
         ))}
       </div>
 
-      {/* Results */}
+      {/* Results count */}
       <div className="mb-4 text-sm text-slate-400">
-        {filtered.length} proposal{filtered.length !== 1 ? 's' : ''}
-        {query && ` matching "${query}"`}
+        {t.proposals.results_count(filtered.length)}
+        {query && ` — "${query}"`}
       </div>
 
       <AnimatePresence mode="popLayout">
@@ -108,8 +125,7 @@ export default function Proposals() {
             animate={{ opacity: 1 }}
             className="py-20 text-center text-slate-400"
           >
-            <p className="text-lg font-medium mb-2">No proposals found</p>
-            <p className="text-sm">Try adjusting your filters or search term.</p>
+            <p className="text-lg font-medium mb-2">{t.proposals.no_results}</p>
           </motion.div>
         ) : (
           <motion.div

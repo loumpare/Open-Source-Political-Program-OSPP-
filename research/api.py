@@ -615,6 +615,132 @@ async def simulate_interpret(req: InterpretRequest):
     )
 
 
+# ── Monte Carlo endpoint ─────────────────────────────────────────────────────
+
+class MonteCarloRequest(BaseModel):
+    proposal_id:    str
+    title:          str
+    country:        str = "fr"
+    domain:         str = "economy"
+    body:           str = ""
+    n_agents:       int = 2_000
+    n_runs:         int = 10
+    horizon_years:  int | None = None
+    scenario:       str = "baseline"
+
+
+def _mc_percentile(values: list, p: float) -> float:
+    """Simple percentile without numpy dependency on sorted list."""
+    if not values:
+        return 0.0
+    s = sorted(values)
+    idx = (len(s) - 1) * p / 100
+    lo, hi = int(idx), min(int(idx) + 1, len(s) - 1)
+    return round(s[lo] + (s[hi] - s[lo]) * (idx - lo), 4)
+
+
+def _aggregate_runs(runs: list[dict]) -> dict:
+    """Aggregate N simulation results into mean/std/p5/p95 per metric per year."""
+    if not runs:
+        return {}
+
+    n = len(runs)
+    first = runs[0]
+    years = [s["year"] for s in first["series"]]
+
+    # Identify all numeric metric keys from first series point
+    metric_keys = [
+        k for k, v in first["series"][0].items()
+        if isinstance(v, (int, float)) and k != "year"
+    ]
+
+    series_agg = []
+    for i, year in enumerate(years):
+        point: dict = {"year": year}
+        for mk in metric_keys:
+            vals = [r["series"][i][mk] for r in runs if i < len(r["series"])]
+            if not vals:
+                continue
+            mean = sum(vals) / n
+            std = (sum((v - mean) ** 2 for v in vals) / n) ** 0.5
+            point[mk] = {
+                "mean":   round(mean, 4),
+                "std":    round(std,  4),
+                "p5":     _mc_percentile(vals, 5),
+                "p95":    _mc_percentile(vals, 95),
+                "min":    round(min(vals), 4),
+                "max":    round(max(vals), 4),
+            }
+        series_agg.append(point)
+
+    # Summary = final year aggregation
+    summary_keys = list(first["summary"].keys())
+    summary_agg: dict = {}
+    for sk in summary_keys:
+        vals = [r["summary"][sk] for r in runs
+                if isinstance(r["summary"].get(sk), (int, float))]
+        if not vals:
+            continue
+        mean = sum(vals) / n
+        std = (sum((v - mean) ** 2 for v in vals) / n) ** 0.5
+        summary_agg[sk] = {
+            "mean": round(mean, 4),
+            "std":  round(std,  4),
+            "p5":   _mc_percentile(vals, 5),
+            "p95":  _mc_percentile(vals, 95),
+            "values": [round(v, 4) for v in vals],
+        }
+
+    return {
+        "meta": {
+            **first["meta"],
+            "n_runs": n,
+        },
+        "summary": summary_agg,
+        "series": series_agg,
+    }
+
+
+@app.post("/simulate/montecarlo")
+def simulate_montecarlo(req: MonteCarloRequest):
+    """Run N simulations with different seeds and return aggregated stats."""
+    if req.n_agents < 100:
+        raise HTTPException(400, "n_agents must be ≥ 100")
+    if req.n_agents > 20_000:
+        raise HTTPException(400, "n_agents must be ≤ 20 000 for Monte Carlo")
+    if req.n_runs < 2:
+        raise HTTPException(400, "n_runs must be ≥ 2")
+    if req.n_runs > 50:
+        raise HTTPException(400, "n_runs must be ≤ 50")
+
+    try:
+        from concurrent.futures import ThreadPoolExecutor
+        from simulation.policy_parser import parse_proposal_dict
+        from simulation.model import run_simulation
+        from dataclasses import replace
+
+        policy = parse_proposal_dict(
+            req.proposal_id, req.title,
+            req.country, req.domain, req.body,
+        )
+        if req.horizon_years is not None:
+            policy = replace(policy, horizon_years=req.horizon_years)
+        policy = _apply_scenario(policy, req.scenario)
+
+        def _run(seed: int) -> dict:
+            return run_simulation(policy, n_agents=req.n_agents, seed=seed)
+
+        with ThreadPoolExecutor(max_workers=min(req.n_runs, 4)) as pool:
+            runs = list(pool.map(_run, range(req.n_runs)))
+
+        result = _aggregate_runs(runs)
+        result["meta"]["scenario"] = req.scenario
+        return result
+
+    except Exception as exc:
+        raise HTTPException(500, str(exc)) from exc
+
+
 # ── Entry point ───────────────────────────────────────────────────────────────
 
 if __name__ == "__main__":
