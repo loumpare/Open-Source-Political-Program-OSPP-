@@ -449,9 +449,31 @@ class SimulateRequest(BaseModel):
     title:          str
     country:        str = "fr"
     domain:         str = "economy"
-    body:           str = ""    # markdown body for LLM param extraction
+    body:           str = ""
     n_agents:       int = 5_000
     seed:           int = 42
+    horizon_years:  int | None = None   # overrides policy horizon if given
+    scenario:       str = "baseline"    # baseline | optimistic | pessimistic
+
+
+def _apply_scenario(policy, scenario: str):
+    """Scale PolicyParams effects by scenario multiplier."""
+    if scenario == "baseline":
+        return policy
+    mult_pos = 1.30 if scenario == "optimistic" else 0.70
+    mult_neg = 0.70 if scenario == "optimistic" else 1.30
+    from dataclasses import replace
+    return replace(
+        policy,
+        income_multiplier=1 + (policy.income_multiplier - 1)
+        * (mult_pos if policy.income_multiplier >= 1 else mult_neg),
+        employment_delta=policy.employment_delta
+        * (mult_pos if policy.employment_delta >= 0 else mult_neg),
+        monthly_transfer=policy.monthly_transfer * mult_pos,
+        wellbeing_delta=policy.wellbeing_delta * mult_pos,
+        gini_delta=policy.gini_delta
+        * (mult_pos if policy.gini_delta <= 0 else mult_neg),
+    )
 
 
 @app.post("/simulate")
@@ -461,6 +483,8 @@ def simulate(req: SimulateRequest):
         raise HTTPException(400, "n_agents must be ≥ 100")
     if req.n_agents > 50_000:
         raise HTTPException(400, "n_agents must be ≤ 50 000")
+    if req.scenario not in ("baseline", "optimistic", "pessimistic"):
+        raise HTTPException(400, "scenario must be baseline|optimistic|pessimistic")
 
     try:
         from simulation.policy_parser import parse_proposal_dict
@@ -470,11 +494,125 @@ def simulate(req: SimulateRequest):
             req.proposal_id, req.title,
             req.country, req.domain, req.body,
         )
+        if req.horizon_years is not None:
+            from dataclasses import replace
+            policy = replace(policy, horizon_years=req.horizon_years)
+        policy = _apply_scenario(policy, req.scenario)
         results = run_simulation(policy, n_agents=req.n_agents, seed=req.seed)
+        results["meta"]["scenario"] = req.scenario
         return results
 
     except Exception as exc:
         raise HTTPException(500, str(exc)) from exc
+
+
+# ── Simulation interpretation (streaming) ────────────────────────────────────
+
+class InterpretRequest(BaseModel):
+    summary: dict
+    meta:    dict
+
+
+async def _stream_interpretation(
+    meta: dict, summary: dict
+) -> AsyncIterator[str]:
+    """Ask Ollama to narrate simulation results in 4 paragraphs (SSE)."""
+    title   = meta.get("title", "this policy")
+    country = meta.get("country", "").upper()
+    years   = meta.get("horizon_years", 5)
+    n       = meta.get("n_agents", 0)
+    scenario = meta.get("scenario", "baseline")
+
+    def fmt(v, unit="", positive_good=True):
+        sign = "+" if v >= 0 else ""
+        good = (v >= 0) == positive_good
+        label = "↑" if v >= 0 else "↓"
+        return f"{sign}{v:.2f}{unit} {label} ({'positive' if good else 'negative'})"
+
+    lines = [
+        f"Simulation: {title} — {country}, {n:,} agents, {years} years ({scenario})",
+        "",
+        "Economic outcomes:",
+        f"  GDP/capita:       {fmt(summary.get('gdp_delta_pct', 0), '%')}",
+        f"  Gini coefficient: {fmt(summary.get('gini_delta', 0), '', positive_good=False)}",
+        f"  Employment rate:  {fmt(summary.get('employment_delta', 0)*100, ' pp')}",
+        f"  Poverty rate:     {fmt(summary.get('poverty_delta', 0)*100, ' pp', False)}",
+        f"  Wellbeing index:  {fmt(summary.get('wellbeing_delta', 0)*100, ' pp')}",
+        "",
+        "Environmental outcomes:",
+        f"  Carbon footprint: {fmt(summary.get('carbon_delta_pct', 0), '%', False)}",
+        f"  Green behaviour:  {fmt(summary.get('green_delta', 0)*100, ' pp')}",
+        "",
+        "Social outcomes:",
+        f"  Health score:     {fmt(summary.get('health_delta', 0)*100, ' pp')}",
+        f"  Social trust:     {fmt(summary.get('trust_delta', 0)*100, ' pp')}",
+    ]
+    context = "\n".join(lines)
+
+    system = (
+        "You are an expert policy analyst for the OSPP open-source platform. "
+        "You receive agent-based simulation results and write a clear, "
+        "evidence-based interpretation.\n"
+        "Rules:\n"
+        "- Reply in the same language as the policy title "
+        "(French if title is in French, English otherwise)\n"
+        "- Write exactly 4 short paragraphs:\n"
+        "  1. Overall verdict (2–3 sentences)\n"
+        "  2. Economic analysis and distributional effects\n"
+        "  3. Environmental and social impact\n"
+        "  4. Caveats, limitations, policy recommendations\n"
+        "- Be precise, cite the numbers, stay neutral\n"
+        "- Max 250 words total"
+    )
+
+    payload = {
+        "model":   OLLAMA_MODEL,
+        "messages": [
+            {"role": "system", "content": system},
+            {"role": "user",   "content": context},
+        ],
+        "stream":  True,
+        "options": {"num_predict": 512, "temperature": 0.4},
+    }
+
+    try:
+        with requests.post(
+            f"{OLLAMA_URL}/api/chat",
+            json=payload, stream=True, timeout=60,
+        ) as resp:
+            resp.raise_for_status()
+            for raw in resp.iter_lines():
+                if not raw:
+                    continue
+                try:
+                    obj = json.loads(raw)
+                except json.JSONDecodeError:
+                    continue
+                token = obj.get("message", {}).get("content", "")
+                if token:
+                    yield (
+                        f"data: {json.dumps({'type': 'text', 'text': token})}\n\n"
+                    )
+                    await asyncio.sleep(0)
+                if obj.get("done"):
+                    break
+    except requests.exceptions.ConnectionError:
+        msg = "Ollama offline — run: ollama serve"
+        yield f"data: {json.dumps({'type': 'error', 'message': msg})}\n\n"
+    except Exception as e:
+        yield f"data: {json.dumps({'type': 'error', 'message': str(e)})}\n\n"
+
+    yield f"data: {json.dumps({'type': 'done'})}\n\n"
+
+
+@app.post("/simulate/interpret")
+async def simulate_interpret(req: InterpretRequest):
+    """Stream an Ollama interpretation of simulation results."""
+    return StreamingResponse(
+        _stream_interpretation(req.meta, req.summary),
+        media_type="text/event-stream",
+        headers={"Cache-Control": "no-cache", "X-Accel-Buffering": "no"},
+    )
 
 
 # ── Entry point ───────────────────────────────────────────────────────────────

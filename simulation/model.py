@@ -1,4 +1,4 @@
-"""Multi-year economic ABM — Mesa 3 compatible."""
+"""Multi-year economic-social-environmental ABM — Mesa 3."""
 from __future__ import annotations
 
 import random
@@ -13,13 +13,11 @@ from simulation.policy_parser import PolicyParams
 
 class EconomyModel(Model):
     """
-    Agent-based economic model that simulates the effect of a policy
-    intervention over multiple years.
+    Agent-based model simulating a policy intervention over multiple years.
 
-    Two parallel populations run in the same model:
-      - control  group (no policy)
-      - treatment group (with policy)
-    This allows a clean A/B comparison without running two separate models.
+    Two parallel groups (control / treatment) run in the same model for
+    a clean A/B comparison.  Metrics cover economic, environmental and
+    social dimensions.
     """
 
     def __init__(
@@ -30,7 +28,6 @@ class EconomyModel(Model):
         seed: int = 42,
     ):
         super().__init__(seed=seed)
-        # Standard-library RNG exposed to agents for gauss/random calls
         self.rng_instance = random.Random(seed)
 
         self.n_agents = n_agents
@@ -39,23 +36,36 @@ class EconomyModel(Model):
         self.current_step = 0
 
         profile = get_profile(country)
-
-        # Create agents: each index i spawns a control + treatment twin
         for _ in range(n_agents):
             CitizenAgent(self, profile, policy=policy, with_policy=False)
             CitizenAgent(self, profile, policy=policy, with_policy=True)
 
         self.datacollector = DataCollector(
             model_reporters={
-                "year":              lambda m: m.current_step,
-                "gdp_control":       lambda m: m._mean_income(False),
-                "gdp_policy":        lambda m: m._mean_income(True),
-                "gini_control":      lambda m: m._gini(False),
-                "gini_policy":       lambda m: m._gini(True),
-                "employment_control": lambda m: m._employment_rate(False),
-                "employment_policy": lambda m: m._employment_rate(True),
-                "wellbeing_control": lambda m: m._mean_wellbeing(False),
-                "wellbeing_policy":  lambda m: m._mean_wellbeing(True),
+                # housekeeping
+                "year": lambda m: m.current_step,
+                # economic
+                "gdp_control": lambda m: m._mean_income(False),
+                "gdp_policy": lambda m: m._mean_income(True),
+                "gini_control": lambda m: m._gini(False),
+                "gini_policy": lambda m: m._gini(True),
+                "employment_control": lambda m: m._employment(False),
+                "employment_policy": lambda m: m._employment(True),
+                "poverty_control": lambda m: m._poverty(False),
+                "poverty_policy": lambda m: m._poverty(True),
+                # wellbeing
+                "wellbeing_control": lambda m: m._mean_attr("wellbeing", False),
+                "wellbeing_policy": lambda m: m._mean_attr("wellbeing", True),
+                # environmental
+                "carbon_control": lambda m: m._mean_attr("carbon_footprint", False),
+                "carbon_policy": lambda m: m._mean_attr("carbon_footprint", True),
+                "green_control": lambda m: m._mean_attr("green_score", False),
+                "green_policy": lambda m: m._mean_attr("green_score", True),
+                # social
+                "health_control": lambda m: m._mean_attr("health_score", False),
+                "health_policy": lambda m: m._mean_attr("health_score", True),
+                "trust_control": lambda m: m._mean_attr("social_trust", False),
+                "trust_policy": lambda m: m._mean_attr("social_trust", True),
             }
         )
 
@@ -68,26 +78,36 @@ class EconomyModel(Model):
         ]
 
     def _mean_income(self, with_policy: bool) -> float:
-        group = self._group(with_policy)
-        if not group:
+        grp = self._group(with_policy)
+        if not grp:
             return 0.0
-        return round(sum(a.income for a in group) / len(group), 2)
+        return round(sum(a.income for a in grp) / len(grp), 2)
+
+    def _mean_attr(self, attr: str, with_policy: bool) -> float:
+        grp = self._group(with_policy)
+        if not grp:
+            return 0.0
+        return round(sum(getattr(a, attr) for a in grp) / len(grp), 4)
 
     def _gini(self, with_policy: bool) -> float:
-        incomes = [a.income for a in self._group(with_policy)]
-        return compute_gini(incomes)
+        return compute_gini([a.income for a in self._group(with_policy)])
 
-    def _employment_rate(self, with_policy: bool) -> float:
-        group = self._group(with_policy)
-        if not group:
+    def _employment(self, with_policy: bool) -> float:
+        grp = self._group(with_policy)
+        if not grp:
             return 0.0
-        return round(sum(1 for a in group if a.employed) / len(group), 4)
+        return round(sum(1 for a in grp if a.employed) / len(grp), 4)
 
-    def _mean_wellbeing(self, with_policy: bool) -> float:
-        group = self._group(with_policy)
-        if not group:
+    def _poverty(self, with_policy: bool) -> float:
+        """Fraction of agents earning below 60 % of median income."""
+        grp = self._group(with_policy)
+        if not grp:
             return 0.0
-        return round(sum(a.wellbeing for a in group) / len(group), 4)
+        incomes = sorted(a.income for a in grp)
+        median = incomes[len(incomes) // 2]
+        threshold = median * 0.60
+        poor = sum(1 for v in incomes if v < threshold)
+        return round(poor / len(incomes), 4)
 
     # ── Public step ───────────────────────────────────────────────────────────
 
@@ -100,43 +120,46 @@ class EconomyModel(Model):
 
     def get_results(self) -> dict:
         df = self.datacollector.get_model_vars_dataframe()
-
         horizon = self.policy.horizon_years if self.policy else self.current_step
 
-        # Time series — one entry per collected year (step 0 = baseline)
-        series: list[dict] = []
+        series = []
         for _, row in df.iterrows():
             series.append({
-                "year":               int(row["year"]),
-                "gdp_control":        float(row["gdp_control"]),
-                "gdp_policy":         float(row["gdp_policy"]),
-                "gdp_delta_pct":      _pct_delta(
-                    row["gdp_control"], row["gdp_policy"]
-                ),
-                "gini_control":       float(row["gini_control"]),
-                "gini_policy":        float(row["gini_policy"]),
-                "gini_delta":         round(
-                    row["gini_policy"] - row["gini_control"], 4
-                ),
-                "employment_control": float(row["employment_control"]),
-                "employment_policy":  float(row["employment_policy"]),
-                "employment_delta":   round(
-                    row["employment_policy"]
-                    - row["employment_control"],
-                    4,
-                ),
-                "wellbeing_control":  float(row["wellbeing_control"]),
-                "wellbeing_policy":   float(row["wellbeing_policy"]),
-                "wellbeing_delta":    round(
-                    row["wellbeing_policy"]
-                    - row["wellbeing_control"],
-                    4,
-                ),
+                "year":                int(row["year"]),
+                # economic
+                "gdp_control":         float(row["gdp_control"]),
+                "gdp_policy":          float(row["gdp_policy"]),
+                "gdp_delta_pct":       _pct_delta(row["gdp_control"], row["gdp_policy"]),
+                "gini_control":        float(row["gini_control"]),
+                "gini_policy":         float(row["gini_policy"]),
+                "gini_delta":          round(float(row["gini_policy"] - row["gini_control"]), 4),
+                "employment_control":  float(row["employment_control"]),
+                "employment_policy":   float(row["employment_policy"]),
+                "employment_delta":    round(float(row["employment_policy"] - row["employment_control"]), 4),
+                "poverty_control":     float(row["poverty_control"]),
+                "poverty_policy":      float(row["poverty_policy"]),
+                "poverty_delta":       round(float(row["poverty_policy"] - row["poverty_control"]), 4),
+                # wellbeing
+                "wellbeing_control":   float(row["wellbeing_control"]),
+                "wellbeing_policy":    float(row["wellbeing_policy"]),
+                "wellbeing_delta":     round(float(row["wellbeing_policy"] - row["wellbeing_control"]), 4),
+                # environmental
+                "carbon_control":      float(row["carbon_control"]),
+                "carbon_policy":       float(row["carbon_policy"]),
+                "carbon_delta_pct":    _pct_delta(row["carbon_control"], row["carbon_policy"]),
+                "green_control":       float(row["green_control"]),
+                "green_policy":        float(row["green_policy"]),
+                "green_delta":         round(float(row["green_policy"] - row["green_control"]), 4),
+                # social
+                "health_control":      float(row["health_control"]),
+                "health_policy":       float(row["health_policy"]),
+                "health_delta":        round(float(row["health_policy"] - row["health_control"]), 4),
+                "trust_control":       float(row["trust_control"]),
+                "trust_policy":        float(row["trust_policy"]),
+                "trust_delta":         round(float(row["trust_policy"] - row["trust_control"]), 4),
             })
 
-        # Final snapshot
         last = series[-1] if series else {}
-
         return {
             "meta": {
                 "proposal_id":   self.policy.proposal_id if self.policy else "",
@@ -147,37 +170,43 @@ class EconomyModel(Model):
                 "seed":          self.rng_instance.getstate()[1][0],
             },
             "summary": {
-                "gdp_delta_pct":      last.get("gdp_delta_pct",      0),
-                "gini_delta":         last.get("gini_delta",          0),
-                "employment_delta":   last.get("employment_delta",    0),
-                "wellbeing_delta":    last.get("wellbeing_delta",     0),
+                # economic
+                "gdp_delta_pct":        last.get("gdp_delta_pct",       0),
+                "gini_delta":           last.get("gini_delta",           0),
+                "employment_delta":     last.get("employment_delta",     0),
+                "poverty_delta":        last.get("poverty_delta",        0),
+                "wellbeing_delta":      last.get("wellbeing_delta",      0),
+                # environmental
+                "carbon_delta_pct":     last.get("carbon_delta_pct",    0),
+                "green_delta":          last.get("green_delta",          0),
+                # social
+                "health_delta":         last.get("health_delta",         0),
+                "trust_delta":          last.get("trust_delta",          0),
                 "effect_description": (
                     self.policy.effect_description if self.policy else ""
                 ),
             },
-            "series": series,
+            "series":       series,
             "demographics": self._demo_breakdown(),
         }
 
     def _demo_breakdown(self) -> dict:
-        """Income decile × employment rate in the policy group."""
-        group = self._group(True)
+        """Per-decile snapshot for the policy group at end of simulation."""
+        grp = self._group(True)
         breakdown: dict[int, dict] = {}
         for dec in range(10):
-            cohort = [a for a in group if a.decile == dec]
+            cohort = [a for a in grp if a.decile == dec]
             if not cohort:
                 continue
+            n = len(cohort)
             breakdown[dec] = {
-                "n":              len(cohort),
-                "mean_income":    round(
-                    sum(a.income for a in cohort) / len(cohort), 2
-                ),
-                "employment_rate": round(
-                    sum(1 for a in cohort if a.employed) / len(cohort), 3
-                ),
-                "mean_wellbeing": round(
-                    sum(a.wellbeing for a in cohort) / len(cohort), 3
-                ),
+                "n":               n,
+                "mean_income":     round(sum(a.income for a in cohort) / n, 2),
+                "employment_rate": round(sum(1 for a in cohort if a.employed) / n, 3),
+                "mean_wellbeing":  round(sum(a.wellbeing for a in cohort) / n, 3),
+                "mean_carbon":     round(sum(a.carbon_footprint for a in cohort) / n, 2),
+                "mean_health":     round(sum(a.health_score for a in cohort) / n, 3),
+                "mean_trust":      round(sum(a.social_trust for a in cohort) / n, 3),
             }
         return breakdown
 
@@ -193,10 +222,7 @@ def run_simulation(
     n_agents: int = 10_000,
     seed: int = 42,
 ) -> dict:
-    """
-    Convenience function: create model, run for policy.horizon_years steps,
-    return the full results dict.
-    """
+    """Run simulation for policy.horizon_years steps, return full results."""
     model = EconomyModel(
         n_agents=n_agents,
         policy=policy,

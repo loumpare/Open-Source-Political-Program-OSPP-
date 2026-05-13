@@ -13,7 +13,7 @@ from typing import List
 
 import requests
 
-OLLAMA_URL   = os.getenv("OLLAMA_URL",   "http://localhost:11434")
+OLLAMA_URL = os.getenv("OLLAMA_URL",   "http://localhost:11434")
 OLLAMA_MODEL = os.getenv("OLLAMA_MODEL", "qwen2.5:7b")
 
 
@@ -36,7 +36,8 @@ class PolicyParams:
     # Simulation time horizon in years
     horizon_years: int = 5
     # Income deciles targeted (0–9); empty list = all deciles
-    target_income_deciles: List[int] = field(default_factory=lambda: list(range(10)))
+    target_income_deciles: List[int] = field(
+        default_factory=lambda: list(range(10)))
     target_age_min: int = 18
     target_age_max: int = 90
     # Targeted sectors; empty = all sectors
@@ -117,9 +118,9 @@ def _fallback(proposal_id: str) -> dict:
     if "ECO" in pid and ("SMIC" in pid or pid.endswith("001")):
         return {
             "monthly_transfer":       0,
-            "employment_delta":    -0.005,
+            "employment_delta": -0.005,
             "income_multiplier":    1.12,
-            "gini_delta":          -0.015,
+            "gini_delta": -0.015,
             "wellbeing_delta":      0.06,
             "horizon_years":        3,
             "target_income_deciles": [0, 1, 2, 3],
@@ -134,7 +135,7 @@ def _fallback(proposal_id: str) -> dict:
             "monthly_transfer":     500,
             "employment_delta":    0.01,
             "income_multiplier":   1.0,
-            "gini_delta":         -0.02,
+            "gini_delta": -0.02,
             "wellbeing_delta":     0.08,
             "horizon_years":       5,
             "target_income_deciles": list(range(10)),
@@ -149,7 +150,7 @@ def _fallback(proposal_id: str) -> dict:
             "monthly_transfer":     100,
             "employment_delta":     0.015,
             "income_multiplier":    1.01,
-            "gini_delta":          -0.008,
+            "gini_delta": -0.008,
             "wellbeing_delta":      0.05,
             "horizon_years":        10,
             "target_income_deciles": list(range(10)),
@@ -164,7 +165,7 @@ def _fallback(proposal_id: str) -> dict:
             "monthly_transfer":     0,
             "employment_delta":     0.02,
             "income_multiplier":    1.05,
-            "gini_delta":          -0.01,
+            "gini_delta": -0.01,
             "wellbeing_delta":      0.07,
             "horizon_years":        8,
             "target_income_deciles": [0, 1, 2, 3, 4],
@@ -178,7 +179,7 @@ def _fallback(proposal_id: str) -> dict:
         "monthly_transfer":     0,
         "employment_delta":     0.005,
         "income_multiplier":    1.02,
-        "gini_delta":          -0.005,
+        "gini_delta": -0.005,
         "wellbeing_delta":      0.03,
         "horizon_years":        5,
         "target_income_deciles": list(range(10)),
@@ -193,9 +194,9 @@ def parse_proposal(md_path: str) -> PolicyParams:
     """Parse a markdown proposal file into PolicyParams."""
     body, fm = _read_proposal(md_path)
     proposal_id = fm.get("id", Path(md_path).stem.upper())
-    title       = fm.get("title",   "Unknown policy")
-    country     = fm.get("country", "global").lower()
-    domain      = fm.get("domain",  "economy").lower()
+    title = fm.get("title",   "Unknown policy")
+    country = fm.get("country", "global").lower()
+    domain = fm.get("domain",  "economy").lower()
 
     extracted = _extract_with_llm(title, body) or _fallback(proposal_id)
 
@@ -204,18 +205,18 @@ def parse_proposal(md_path: str) -> PolicyParams:
         title=title,
         country=country,
         domain=domain,
-        monthly_transfer    = float(extracted.get("monthly_transfer",    0)),
-        employment_delta    = float(extracted.get("employment_delta",    0)),
-        income_multiplier   = float(extracted.get("income_multiplier",   1.0)),
-        gini_delta          = float(extracted.get("gini_delta",          0)),
-        wellbeing_delta     = float(extracted.get("wellbeing_delta",     0)),
-        horizon_years       = int(extracted.get("horizon_years",         5)),
-        target_income_deciles = list(extracted.get(
+        monthly_transfer=float(extracted.get("monthly_transfer",    0)),
+        employment_delta=float(extracted.get("employment_delta",    0)),
+        income_multiplier=float(extracted.get("income_multiplier",   1.0)),
+        gini_delta=float(extracted.get("gini_delta",          0)),
+        wellbeing_delta=float(extracted.get("wellbeing_delta",     0)),
+        horizon_years=int(extracted.get("horizon_years",         5)),
+        target_income_deciles=list(extracted.get(
             "target_income_deciles", list(range(10))
         )),
-        target_age_min  = int(extracted.get("target_age_min", 18)),
-        target_age_max  = int(extracted.get("target_age_max", 90)),
-        effect_description = str(extracted.get("effect_description", "")),
+        target_age_min=int(extracted.get("target_age_min", 18)),
+        target_age_max=int(extracted.get("target_age_max", 90)),
+        effect_description=str(extracted.get("effect_description", "")),
     )
 
 
@@ -226,16 +227,16 @@ def parse_proposal_dict(proposal_id: str, title: str, country: str,
     return PolicyParams(
         proposal_id=proposal_id, title=title,
         country=country.lower(), domain=domain.lower(),
-        monthly_transfer    = float(extracted.get("monthly_transfer",    0)),
-        employment_delta    = float(extracted.get("employment_delta",    0)),
-        income_multiplier   = float(extracted.get("income_multiplier",   1.0)),
-        gini_delta          = float(extracted.get("gini_delta",          0)),
-        wellbeing_delta     = float(extracted.get("wellbeing_delta",     0)),
-        horizon_years       = int(extracted.get("horizon_years",         5)),
-        target_income_deciles = list(extracted.get(
+        monthly_transfer=float(extracted.get("monthly_transfer",    0)),
+        employment_delta=float(extracted.get("employment_delta",    0)),
+        income_multiplier=float(extracted.get("income_multiplier",   1.0)),
+        gini_delta=float(extracted.get("gini_delta",          0)),
+        wellbeing_delta=float(extracted.get("wellbeing_delta",     0)),
+        horizon_years=int(extracted.get("horizon_years",         5)),
+        target_income_deciles=list(extracted.get(
             "target_income_deciles", list(range(10))
         )),
-        target_age_min  = int(extracted.get("target_age_min", 18)),
-        target_age_max  = int(extracted.get("target_age_max", 90)),
-        effect_description = str(extracted.get("effect_description", "")),
+        target_age_min=int(extracted.get("target_age_min", 18)),
+        target_age_max=int(extracted.get("target_age_max", 90)),
+        effect_description=str(extracted.get("effect_description", "")),
     )
