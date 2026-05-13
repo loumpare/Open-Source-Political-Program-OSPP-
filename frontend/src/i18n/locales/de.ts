@@ -150,6 +150,33 @@ export const de: Translations = {
     how_ab: 'A/B-Test',
     how_ab_detail: 'Kontrollgruppe vs. Behandlungsgruppe parallel',
 
+    chart_yearly: 'Jährliche Entwicklung',
+    chart_income: 'Durchschnittliches Monatseinkommen (€)',
+    chart_carbon_full: 'CO₂-Fußabdruck (tCO₂/Agent/Jahr)',
+    vs_control: 'vs. Kontrollgruppe',
+    avg_score_01: 'Score 0–1',
+    years_suffix: (n: number) => `${n} Jahr${n !== 1 ? 'e' : ''}`,
+    year_min: '1 Jahr',
+    year_max: '20 Jahre',
+    agents_per_run: 'Agenten/Lauf',
+    runs_label: 'Läufe',
+    error_unknown: 'Unbekannter Fehler',
+    methodology_title: 'Methodik',
+    methodology_env:
+      'CO₂-Fußabdruck kalibriert auf nationale Durchschnittswerte (GCP 2024), '
+      + 'skaliert nach Einkommensdezil und Sektor (Industrie ×1,55, öffentlicher Dienst ×0,80). '
+      + 'Einkommenssteigerungen erzeugen einen Rebound-Effekt (+30 % des Einkommensgewinns).',
+    sources_social_title: 'Soziale Kalibrierungsquellen',
+    sources_social_body:
+      'Gesundheitsscore: Einkommen + Beschäftigung + Alter + Systemzugang (WHO 2024). '
+      + 'Soziales Vertrauen: Hofstede-Kollektivismus-Index (World Values Survey).',
+    mc_ci_title: 'Entwicklung mit Konfidenzintervallen',
+    mc_ci_note: (n: number) => `P5–P95-Band über ${n} Läufe`,
+    mc_interp_title: 'Statistische Interpretation',
+    mc_interp_body: (n: number) =>
+      `Das schattierte Band zeigt das P5–P95-Konfidenzintervall — 90 % der ${n} Simulationen liegen darin. `
+      + 'Breite Bänder deuten auf hohe Stochastizität hin; schmale Bänder zeigen robuste Ergebnisse.',
+
     mc_title: 'Monte Carlo',
     mc_subtitle: 'Führen Sie N Simulationen mit verschiedenen Saaten aus, um Unsicherheitsbereiche zu visualisieren.',
     mc_runs: 'Anzahl der Durchläufe',

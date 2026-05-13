@@ -148,6 +148,37 @@ export const fr = {
     how_ab: 'Test A/B',
     how_ab_detail: 'Groupe contrôle vs traitement en parallèle',
 
+    // chart axis labels
+    chart_yearly: 'Évolution temporelle',
+    chart_income: 'Revenu mensuel moyen (€)',
+    chart_carbon_full: "Empreinte carbone (tCO₂/agent/an)",
+    vs_control: 'vs groupe contrôle',
+    avg_score_01: 'score 0–1',
+    years_suffix: (n: number) => `${n} an${n > 1 ? 's' : ''}`,
+    year_min: '1 an',
+    year_max: '20 ans',
+    agents_per_run: 'agents/run',
+    runs_label: 'runs',
+    error_unknown: 'Erreur inconnue',
+
+    // methodology notes
+    methodology_title: 'Méthode de calcul',
+    methodology_env:
+      "Empreinte carbone calibrée sur les moyennes nationales (GCP 2024), "
+      + "modulée par décile de revenus et secteur (industrie ×1.55, services publics ×0.80). "
+      + "Les hausses de revenus induisent un effet rebond (+30 % du gain).",
+    sources_social_title: 'Sources des calibrations sociales',
+    sources_social_body:
+      "Score de santé : revenu + emploi + âge + accessibilité du système (OMS 2024). "
+      + "Confiance sociale : index de collectivisme de Hofstede (World Values Survey).",
+    // Monte Carlo extras
+    mc_ci_title: 'Évolution avec intervalles de confiance',
+    mc_ci_note: (n: number) => `bande P5–P95 sur ${n} runs`,
+    mc_interp_title: 'Interprétation statistique',
+    mc_interp_body: (n: number) =>
+      `La bande colorée représente l'intervalle P5–P95 — 90 % des ${n} simulations tombent dans cette zone. `
+      + "Des bandes larges signalent une forte stochasticité ; des bandes étroites indiquent des résultats robustes.",
+
     mc_title: 'Monte Carlo',
     mc_subtitle: "Lancez N simulations avec des graines différentes pour visualiser les plages d'incertitude.",
     mc_runs: 'Nombre de simulations',

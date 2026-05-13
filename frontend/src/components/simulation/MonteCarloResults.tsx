@@ -112,7 +112,7 @@ export default function MonteCarloResults({ results }: Props) {
             <div className="flex items-center gap-2 mb-1">
               <span className="text-lg font-bold">🎲 Monte Carlo</span>
               <span className="text-xs bg-white/10 border border-white/20 rounded-full px-2 py-0.5">
-                {meta.n_runs} runs · {meta.n_agents.toLocaleString()} agents/run
+                {meta.n_runs} {t.simulation.runs_label} · {meta.n_agents.toLocaleString()} {t.simulation.agents_per_run}
               </span>
             </div>
             <p className="text-indigo-200 text-sm">{meta.title}</p>
@@ -180,10 +180,10 @@ export default function MonteCarloResults({ results }: Props) {
       <div className="bg-white rounded-2xl border border-slate-200 p-5 space-y-5">
         <div className="flex items-center gap-2">
           <h4 className="text-xs font-semibold text-slate-600 uppercase tracking-wide">
-            Évolution temporelle avec intervalles de confiance
+            {t.simulation.mc_ci_title}
           </h4>
           <span className="text-xs text-slate-400">
-            — bande P5–P95 sur {meta.n_runs} runs
+            — {t.simulation.mc_ci_note(meta.n_runs)}
           </span>
         </div>
         {CHART_METRICS.map(cm => {
@@ -202,14 +202,8 @@ export default function MonteCarloResults({ results }: Props) {
 
       {/* Convergence note */}
       <div className="bg-slate-50 rounded-xl border border-slate-100 p-4 text-xs text-slate-600">
-        <p className="font-medium text-slate-700 mb-1">Interprétation statistique</p>
-        <p>
-          La bande colorée représente l'intervalle de confiance P5–P95 — 90 % des
-          {meta.n_runs} simulations tombent dans cette zone.
-          La ligne centrale est la médiane des moyennes.
-          Des bandes larges indiquent une forte sensibilité aux conditions initiales
-          (stochasticité élevée) ; des bandes étroites indiquent des résultats robustes.
-        </p>
+        <p className="font-medium text-slate-700 mb-1">{t.simulation.mc_interp_title}</p>
+        <p>{t.simulation.mc_interp_body(meta.n_runs)}</p>
       </div>
     </div>
   )

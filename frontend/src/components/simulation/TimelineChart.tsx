@@ -1,5 +1,6 @@
 import { useEffect, useRef } from 'react'
 import * as d3 from 'd3'
+import { useLanguage } from '../../i18n'
 
 interface DataPoint {
   year: number
@@ -22,6 +23,7 @@ export default function TimelineChart({
   color = '#6366f1',
   formatY,
 }: TimelineChartProps) {
+  const { t } = useLanguage()
   const svgRef = useRef<SVGSVGElement>(null)
 
   useEffect(() => {
@@ -125,14 +127,14 @@ export default function TimelineChart({
         <div className="flex gap-3 text-xs text-slate-400">
           <span className="flex items-center gap-1">
             <span className="inline-block w-4 border-t-2 border-dashed border-slate-400" />
-            Without
+            {t.simulation.chart_without}
           </span>
           <span className="flex items-center gap-1">
             <span
               className="inline-block w-4 border-t-2"
               style={{ borderColor: color }}
             />
-            With policy
+            {t.simulation.chart_with}
           </span>
         </div>
       </div>

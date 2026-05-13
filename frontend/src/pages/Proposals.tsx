@@ -12,7 +12,7 @@ export default function Proposals() {
   const { t } = useLanguage()
   const [searchParams, setSearchParams] = useSearchParams()
   const [query, setQuery]   = useState('')
-  const [country, setCountry] = useState('All')
+  const [country, setCountry] = useState('__all__')
 
   const domainParam = searchParams.get('domain') ?? 'all'
 
@@ -24,7 +24,10 @@ export default function Proposals() {
     })),
   ]
 
-  const COUNTRIES = [t.proposals.filter_all, ...COUNTRIES_RAW]
+  const COUNTRIES = [
+    { value: '__all__', label: t.proposals.filter_all },
+    ...COUNTRIES_RAW.map(c => ({ value: c, label: c })),
+  ]
 
   const setDomain = (d: string) => {
     if (d === 'all') setSearchParams({})
@@ -34,7 +37,7 @@ export default function Proposals() {
   const filtered = useMemo(() => {
     return PROPOSALS.filter(p => {
       if (domainParam !== 'all' && p.domain !== domainParam) return false
-      if (country !== t.proposals.filter_all && p.country !== country) return false
+      if (country !== '__all__' && p.country !== country) return false
       if (query) {
         const q = query.toLowerCase()
         return (
@@ -90,7 +93,9 @@ export default function Proposals() {
             className="py-2.5 px-3 rounded-xl border border-slate-200 bg-white
                        text-sm text-slate-700 focus:outline-none focus:ring-2 focus:ring-slate-900/10"
           >
-            {COUNTRIES.map(c => <option key={c}>{c}</option>)}
+            {COUNTRIES.map(c => (
+              <option key={c.value} value={c.value}>{c.label}</option>
+            ))}
           </select>
         </div>
       </div>

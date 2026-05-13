@@ -1,6 +1,7 @@
 import { useState } from 'react'
 import { PROPOSALS } from '../../data/proposals'
 import { API_BASE } from '../../config'
+import { useLanguage } from '../../i18n'
 
 const COUNTRY_CODES: Record<string, string> = {
   France: 'fr', 'United States': 'us', Denmark: 'dk', Germany: 'de',
@@ -8,11 +9,11 @@ const COUNTRY_CODES: Record<string, string> = {
   'United Kingdom': 'gb', Japan: 'jp', Global: 'global',
 }
 
-const SCENARIOS = [
-  { id: 'pessimistic', label: 'Pessimiste', color: 'text-rose-600', bg: 'bg-rose-50 border-rose-300' },
-  { id: 'baseline',   label: 'Baseline',   color: 'text-slate-700', bg: 'bg-white border-slate-300' },
-  { id: 'optimistic', label: 'Optimiste',  color: 'text-emerald-600', bg: 'bg-emerald-50 border-emerald-300' },
-]
+const SCENARIO_STYLES = {
+  pessimistic: { color: 'text-rose-600',    bg: 'bg-rose-50 border-rose-300'    },
+  baseline:    { color: 'text-slate-700',   bg: 'bg-white border-slate-300'     },
+  optimistic:  { color: 'text-emerald-600', bg: 'bg-emerald-50 border-emerald-300' },
+}
 
 interface LaunchParams {
   proposalId: string; nAgents: number; years: number; scenario: string; seed: number
@@ -24,6 +25,7 @@ interface Props {
 }
 
 export default function SimulationLauncher({ onResults, onLoading }: Props) {
+  const { t } = useLanguage()
   const [proposalId, setProposalId] = useState(PROPOSALS[0].id)
   const [nAgents, setNAgents]       = useState(5_000)
   const [years, setYears]           = useState(5)
@@ -34,6 +36,24 @@ export default function SimulationLauncher({ onResults, onLoading }: Props) {
 
   const selected = PROPOSALS.find(p => p.id === proposalId) ?? PROPOSALS[0]
   const countryCode = COUNTRY_CODES[selected.country] ?? 'global'
+
+  const SCENARIOS = [
+    { id: 'pessimistic', label: t.simulation.scenario_pessimistic },
+    { id: 'baseline',    label: t.simulation.scenario_baseline    },
+    { id: 'optimistic',  label: t.simulation.scenario_optimistic  },
+  ] as const
+
+  const AGENT_OPTIONS = [
+    { val: 1_000,  label: `1 000\n${t.simulation.agents_fast}`        },
+    { val: 5_000,  label: `5 000\n${t.simulation.agents_recommended}` },
+    { val: 10_000, label: `10 000\n${t.simulation.agents_precise}`    },
+  ]
+
+  const SCENARIO_HINT: Record<string, string> = {
+    optimistic:  t.simulation.scenario_hint_optimistic,
+    baseline:    t.simulation.scenario_hint_baseline,
+    pessimistic: t.simulation.scenario_hint_pessimistic,
+  }
 
   async function launch() {
     setRunning(true); setError(''); onLoading(true)
@@ -57,7 +77,7 @@ export default function SimulationLauncher({ onResults, onLoading }: Props) {
       const params: LaunchParams = { proposalId, nAgents, years, scenario, seed }
       onResults(await res.json(), params)
     } catch (e) {
-      setError(e instanceof Error ? e.message : 'API inaccessible — lancez le serveur')
+      setError(e instanceof Error ? e.message : t.errors.api_offline)
       onResults(null, { proposalId, nAgents, years, scenario, seed })
     } finally {
       setRunning(false); onLoading(false)
@@ -67,14 +87,14 @@ export default function SimulationLauncher({ onResults, onLoading }: Props) {
   return (
     <div className="bg-white rounded-2xl border border-slate-200 shadow-sm p-5 space-y-5">
       <div>
-        <h2 className="text-lg font-bold text-slate-800">Paramètres</h2>
-        <p className="text-xs text-slate-400 mt-0.5">Mesa 3 · Ollama · 11 pays calibrés</p>
+        <h2 className="text-lg font-bold text-slate-800">{t.simulation.launcher_title}</h2>
+        <p className="text-xs text-slate-400 mt-0.5">{t.simulation.launcher_subtitle}</p>
       </div>
 
       {/* Proposal */}
       <div>
         <label className="block text-xs font-semibold text-slate-500 uppercase tracking-wide mb-1.5">
-          Proposition
+          {t.simulation.label_proposal}
         </label>
         <select
           className="w-full border border-slate-200 rounded-lg px-3 py-2 text-sm bg-white
@@ -100,9 +120,11 @@ export default function SimulationLauncher({ onResults, onLoading }: Props) {
       <div>
         <div className="flex items-center justify-between mb-1.5">
           <label className="text-xs font-semibold text-slate-500 uppercase tracking-wide">
-            Horizon temporel
+            {t.simulation.label_horizon}
           </label>
-          <span className="text-sm font-bold text-indigo-600">{years} ans</span>
+          <span className="text-sm font-bold text-indigo-600">
+            {t.simulation.years_suffix(years)}
+          </span>
         </div>
         <input
           type="range" min={1} max={20} step={1} value={years}
@@ -110,30 +132,28 @@ export default function SimulationLauncher({ onResults, onLoading }: Props) {
           className="w-full accent-indigo-600 h-1.5 rounded cursor-pointer"
         />
         <div className="flex justify-between text-xs text-slate-400 mt-0.5">
-          <span>1 an</span><span>10</span><span>20 ans</span>
+          <span>{t.simulation.year_min}</span>
+          <span>10</span>
+          <span>{t.simulation.year_max}</span>
         </div>
       </div>
 
       {/* Agents */}
       <div>
         <label className="block text-xs font-semibold text-slate-500 uppercase tracking-wide mb-1.5">
-          Population simulée
+          {t.simulation.label_population}
         </label>
         <div className="grid grid-cols-3 gap-1.5">
-          {[
-            [1_000,  '1 000\nrapide'],
-            [5_000,  '5 000\nrecommandé'],
-            [10_000, '10 000\nprécis'],
-          ].map(([val, lbl]) => (
+          {AGENT_OPTIONS.map(opt => (
             <button
-              key={val}
-              onClick={() => setNAgents(val as number)}
+              key={opt.val}
+              onClick={() => setNAgents(opt.val)}
               className={`py-2 text-xs rounded-lg border transition-all whitespace-pre-line leading-tight
-                ${nAgents === val
+                ${nAgents === opt.val
                   ? 'bg-indigo-600 text-white border-indigo-600 font-semibold'
                   : 'bg-white text-slate-600 border-slate-200 hover:border-indigo-300'}`}
             >
-              {lbl}
+              {opt.label}
             </button>
           ))}
         </div>
@@ -142,31 +162,32 @@ export default function SimulationLauncher({ onResults, onLoading }: Props) {
       {/* Scenario */}
       <div>
         <label className="block text-xs font-semibold text-slate-500 uppercase tracking-wide mb-1.5">
-          Scénario
+          {t.simulation.label_scenario}
         </label>
         <div className="grid grid-cols-3 gap-1.5">
-          {SCENARIOS.map(s => (
-            <button
-              key={s.id}
-              onClick={() => setScenario(s.id)}
-              className={`py-2 text-xs rounded-lg border transition-all font-medium
-                ${scenario === s.id ? s.bg + ' ' + s.color : 'bg-white text-slate-500 border-slate-200 hover:border-slate-300'}`}
-            >
-              {s.label}
-            </button>
-          ))}
+          {SCENARIOS.map(s => {
+            const style = SCENARIO_STYLES[s.id as keyof typeof SCENARIO_STYLES]
+            return (
+              <button
+                key={s.id}
+                onClick={() => setScenario(s.id)}
+                className={`py-2 text-xs rounded-lg border transition-all font-medium
+                  ${scenario === s.id
+                    ? `${style.bg} ${style.color}`
+                    : 'bg-white text-slate-500 border-slate-200 hover:border-slate-300'}`}
+              >
+                {s.label}
+              </button>
+            )
+          })}
         </div>
-        <p className="text-xs text-slate-400 mt-1.5">
-          {scenario === 'optimistic' && 'Effets positifs ×1.3 — calibrage favorable'}
-          {scenario === 'baseline'   && 'Effets calibrés sur données historiques'}
-          {scenario === 'pessimistic' && 'Effets positifs ×0.7 — calibrage conservateur'}
-        </p>
+        <p className="text-xs text-slate-400 mt-1.5">{SCENARIO_HINT[scenario]}</p>
       </div>
 
       {/* Seed */}
       <div>
         <label className="block text-xs font-semibold text-slate-500 uppercase tracking-wide mb-1.5">
-          Graine aléatoire
+          {t.simulation.label_seed}
         </label>
         <div className="flex gap-2">
           <input
@@ -179,7 +200,7 @@ export default function SimulationLauncher({ onResults, onLoading }: Props) {
             onClick={() => setSeed(Math.floor(Math.random() * 99999))}
             className="px-3 py-1.5 text-xs border border-slate-200 rounded-lg
                        hover:bg-slate-50 text-slate-500"
-            title="Graine aléatoire"
+            title={t.simulation.seed_random}
           >
             🎲
           </button>
@@ -204,9 +225,9 @@ export default function SimulationLauncher({ onResults, onLoading }: Props) {
               <circle cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" className="opacity-25"/>
               <path fill="currentColor" className="opacity-75" d="M4 12a8 8 0 018-8v4a4 4 0 00-4 4H4z"/>
             </svg>
-            Simulation en cours…
+            {t.simulation.btn_running}
           </>
-        ) : '▶ Lancer la simulation'}
+        ) : `▶ ${t.simulation.btn_run}`}
       </button>
     </div>
   )

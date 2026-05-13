@@ -150,6 +150,33 @@ export const en: Translations = {
     how_ab: 'A/B test',
     how_ab_detail: 'Control group vs treatment group in parallel',
 
+    chart_yearly: 'Year-by-year evolution',
+    chart_income: 'Mean monthly income (€)',
+    chart_carbon_full: 'Carbon footprint (tCO₂/agent/yr)',
+    vs_control: 'vs. control group',
+    avg_score_01: 'score 0–1',
+    years_suffix: (n: number) => `${n} year${n !== 1 ? 's' : ''}`,
+    year_min: '1 year',
+    year_max: '20 years',
+    agents_per_run: 'agents/run',
+    runs_label: 'runs',
+    error_unknown: 'Unknown error',
+    methodology_title: 'Methodology',
+    methodology_env:
+      'Carbon footprint calibrated on national averages (GCP 2024), '
+      + 'scaled by income decile and sector (industry ×1.55, public sector ×0.80). '
+      + 'Income gains trigger a rebound effect (+30% of the income gain).',
+    sources_social_title: 'Social calibration sources',
+    sources_social_body:
+      'Health score: income + employment + age + system access (WHO 2024). '
+      + 'Social trust: Hofstede collectivism index (World Values Survey).',
+    mc_ci_title: 'Evolution with confidence intervals',
+    mc_ci_note: (n: number) => `P5–P95 band over ${n} runs`,
+    mc_interp_title: 'Statistical interpretation',
+    mc_interp_body: (n: number) =>
+      `The shaded band is the P5–P95 confidence interval — 90% of the ${n} simulations fall within it. `
+      + 'Wide bands signal high stochasticity; narrow bands indicate robust results.',
+
     mc_title: 'Monte Carlo',
     mc_subtitle: 'Run N simulations with different seeds to visualise uncertainty ranges.',
     mc_runs: 'Number of runs',

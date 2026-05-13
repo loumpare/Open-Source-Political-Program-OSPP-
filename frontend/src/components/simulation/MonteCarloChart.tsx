@@ -1,5 +1,6 @@
 import { useEffect, useRef } from 'react'
 import * as d3 from 'd3'
+import { useLanguage } from '../../i18n'
 
 interface BandPoint {
   year: number
@@ -21,6 +22,7 @@ export default function MonteCarloChart({
   color = '#6366f1',
   formatY,
 }: Props) {
+  const { t } = useLanguage()
   const svgRef = useRef<SVGSVGElement>(null)
 
   useEffect(() => {
@@ -139,14 +141,14 @@ export default function MonteCarloChart({
         <div className="flex gap-3 text-xs text-slate-400">
           <span className="flex items-center gap-1">
             <span className="inline-block w-4 border-t-2" style={{ borderColor: color }} />
-            Moyenne
+            {t.simulation.mc_chart_mean}
           </span>
           <span className="flex items-center gap-1">
             <span
               className="inline-block w-4 h-3 rounded-sm opacity-30"
               style={{ backgroundColor: color }}
             />
-            P5–P95
+            {t.simulation.mc_chart_band}
           </span>
         </div>
       </div>
