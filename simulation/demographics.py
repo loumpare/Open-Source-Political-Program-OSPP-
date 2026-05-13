@@ -28,6 +28,10 @@ class CountryProfile:
     # tCO2/year per capita (national average)
     carbon_baseline_t: float = 7.0
     healthcare_access: float = 0.80    # 0–1 healthcare system quality index
+    # UNESCO/PISA composite — literacy, numeracy, years of schooling
+    education_index: float = 0.75
+    # Absolute poverty line €/month (Eurostat 60%-of-national-median approach)
+    poverty_line_eur: float = 900.0
 
 
 PROFILES: dict[str, CountryProfile] = {
@@ -45,6 +49,7 @@ PROFILES: dict[str, CountryProfile] = {
                     (50, 64, 0.22), (65, 90, 0.31)],
         political_std=0.33, collectivism=0.62,
         carbon_baseline_t=5.1, healthcare_access=0.88,
+        education_index=0.74, poverty_line_eur=1063,
     ),
     "us": CountryProfile(
         code="us", name="United States",
@@ -60,6 +65,7 @@ PROFILES: dict[str, CountryProfile] = {
                     (50, 64, 0.22), (65, 90, 0.25)],
         political_std=0.42, collectivism=0.38,
         carbon_baseline_t=14.5, healthcare_access=0.70,
+        education_index=0.67, poverty_line_eur=1250,
     ),
     "dk": CountryProfile(
         code="dk", name="Denmark",
@@ -75,6 +81,7 @@ PROFILES: dict[str, CountryProfile] = {
                     (50, 64, 0.23), (65, 90, 0.31)],
         political_std=0.28, collectivism=0.74,
         carbon_baseline_t=6.2, healthcare_access=0.92,
+        education_index=0.81, poverty_line_eur=1520,
     ),
     "de": CountryProfile(
         code="de", name="Germany",
@@ -90,6 +97,7 @@ PROFILES: dict[str, CountryProfile] = {
                     (50, 64, 0.25), (65, 90, 0.32)],
         political_std=0.33, collectivism=0.57,
         carbon_baseline_t=8.1, healthcare_access=0.89,
+        education_index=0.77, poverty_line_eur=1050,
     ),
     "se": CountryProfile(
         code="se", name="Sweden",
@@ -105,6 +113,7 @@ PROFILES: dict[str, CountryProfile] = {
                     (50, 64, 0.23), (65, 90, 0.31)],
         political_std=0.28, collectivism=0.76,
         carbon_baseline_t=4.5, healthcare_access=0.93,
+        education_index=0.82, poverty_line_eur=1600,
     ),
     "no": CountryProfile(
         code="no", name="Norway",
@@ -120,6 +129,7 @@ PROFILES: dict[str, CountryProfile] = {
                     (50, 64, 0.22), (65, 90, 0.30)],
         political_std=0.27, collectivism=0.78,
         carbon_baseline_t=7.5, healthcare_access=0.94,
+        education_index=0.82, poverty_line_eur=2100,
     ),
     "fi": CountryProfile(
         code="fi", name="Finland",
@@ -135,6 +145,7 @@ PROFILES: dict[str, CountryProfile] = {
                     (50, 64, 0.24), (65, 90, 0.33)],
         political_std=0.30, collectivism=0.72,
         carbon_baseline_t=7.8, healthcare_access=0.91,
+        education_index=0.85, poverty_line_eur=1450,
     ),
     "ca": CountryProfile(
         code="ca", name="Canada",
@@ -150,6 +161,7 @@ PROFILES: dict[str, CountryProfile] = {
                     (50, 64, 0.23), (65, 90, 0.27)],
         political_std=0.34, collectivism=0.59,
         carbon_baseline_t=14.0, healthcare_access=0.85,
+        education_index=0.73, poverty_line_eur=1150,
     ),
     "gb": CountryProfile(
         code="gb", name="United Kingdom",
@@ -165,6 +177,7 @@ PROFILES: dict[str, CountryProfile] = {
                     (50, 64, 0.23), (65, 90, 0.27)],
         political_std=0.36, collectivism=0.52,
         carbon_baseline_t=5.5, healthcare_access=0.83,
+        education_index=0.72, poverty_line_eur=1100,
     ),
     "jp": CountryProfile(
         code="jp", name="Japan",
@@ -180,6 +193,7 @@ PROFILES: dict[str, CountryProfile] = {
                     (50, 64, 0.22), (65, 90, 0.41)],
         political_std=0.30, collectivism=0.69,
         carbon_baseline_t=8.5, healthcare_access=0.90,
+        education_index=0.80, poverty_line_eur=1050,
     ),
     "global": CountryProfile(
         code="global", name="Global",
@@ -195,6 +209,7 @@ PROFILES: dict[str, CountryProfile] = {
                     (50, 64, 0.22), (65, 90, 0.28)],
         political_std=0.36, collectivism=0.55,
         carbon_baseline_t=7.0, healthcare_access=0.72,
+        education_index=0.68, poverty_line_eur=800,
     ),
 }
 

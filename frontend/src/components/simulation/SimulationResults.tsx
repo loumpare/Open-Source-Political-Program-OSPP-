@@ -9,40 +9,46 @@ const API = API_BASE
 
 interface SeriesPoint {
   year: number
-  gdp_control: number; gdp_policy: number
-  gini_control: number; gini_policy: number
-  employment_control: number; employment_policy: number
-  poverty_control: number; poverty_policy: number
-  wellbeing_control: number; wellbeing_policy: number
-  carbon_control: number; carbon_policy: number
-  green_control: number; green_policy: number
-  health_control: number; health_policy: number
-  trust_control: number; trust_policy: number
+  gdp_control: number; gdp_policy: number; gdp_delta_pct: number
+  gini_control: number; gini_policy: number; gini_delta: number
+  employment_control: number; employment_policy: number; employment_delta: number
+  poverty_control: number; poverty_policy: number; poverty_delta: number
+  carbon_control: number; carbon_policy: number; carbon_delta_pct: number
+  green_control: number; green_policy: number; green_delta: number
+  wellbeing_control: number; wellbeing_policy: number; wellbeing_delta: number
+  trust_control: number; trust_policy: number; trust_delta: number
+  education_control: number; education_policy: number; education_delta: number
+  health_control: number; health_policy: number; health_delta: number
+  governance_control: number; governance_policy: number; governance_delta: number
 }
 
 interface SimResults {
   meta: {
     proposal_id: string; title: string; country: string
-    n_agents: number; horizon_years: number; scenario?: string
+    n_agents: number; horizon_years: number
+    scenario?: string; poverty_line_eur?: number
   }
   summary: {
     gdp_delta_pct: number; gini_delta: number
     employment_delta: number; poverty_delta: number
     wellbeing_delta: number; carbon_delta_pct: number
     green_delta: number; health_delta: number
+    education_delta: number; governance_delta: number
     trust_delta: number; effect_description: string
   }
   series: SeriesPoint[]
   demographics: Record<string, {
     n: number; mean_income: number; employment_rate: number
     mean_wellbeing: number; mean_carbon: number
-    mean_health: number; mean_trust: number
+    mean_health: number; mean_education?: number; mean_governance?: number
   }>
 }
 
 /* ── Delta chip ─────────────────────────────────────────────────────────────── */
 
-function DeltaChip({ value, unit = '', positiveGood = true, size = 'md' }: {
+function DeltaChip({
+  value, unit = '', positiveGood = true, size = 'md',
+}: {
   value: number; unit?: string; positiveGood?: boolean; size?: 'sm' | 'md' | 'lg'
 }) {
   const good = positiveGood ? value >= 0 : value <= 0
@@ -68,11 +74,9 @@ function AIInterpretation({ results }: { results: SimResults }) {
   const [status, setStatus] = useState<'idle' | 'loading' | 'done' | 'error'>('idle')
   const abortRef            = useRef<(() => void) | null>(null)
 
-  useEffect(() => {
-    return () => { abortRef.current?.() }
-  }, [])
+  useEffect(() => { return () => { abortRef.current?.() } }, [])
 
-  async function runInterpretation() {
+  async function run() {
     setText(''); setStatus('loading')
     let done = false
     try {
@@ -92,10 +96,10 @@ function AIInterpretation({ results }: { results: SimResults }) {
           if (!line.startsWith('data:')) continue
           try {
             const obj = JSON.parse(line.slice(5).trim())
-            if (obj.type === 'text')  setText(prev => prev + obj.text)
+            if (obj.type === 'text')  setText(p => p + obj.text)
             if (obj.type === 'error') { setStatus('error'); setText(obj.message); return }
             if (obj.type === 'done')  { setStatus('done'); return }
-          } catch { /* partial line */ }
+          } catch { /* partial */ }
         }
       }
       setStatus('done')
@@ -109,25 +113,15 @@ function AIInterpretation({ results }: { results: SimResults }) {
     <div className="bg-gradient-to-br from-indigo-50 to-purple-50 rounded-2xl border border-indigo-100 p-6">
       <div className="flex items-center justify-between mb-4">
         <div className="flex items-center gap-2">
-          <div className="w-7 h-7 rounded-full bg-indigo-600 flex items-center justify-center">
-            <svg className="w-4 h-4 text-white" fill="none" viewBox="0 0 24 24"
-              stroke="currentColor" strokeWidth={2}>
-              <path strokeLinecap="round" strokeLinejoin="round"
-                d="M9.663 17h4.673M12 3v1m6.364 1.636l-.707.707M21 12h-1M4 12H3
-                   m3.343-5.657l-.707-.707m2.828 9.9a5 5 0 117.072 0l-.548.547
-                   A3.374 3.374 0 0014 18.469V19a2 2 0 11-4 0v-.531
-                   c0-.895-.356-1.754-.988-2.386l-.548-.547z"/>
-            </svg>
-          </div>
+          <div className="w-7 h-7 rounded-full bg-indigo-600 flex items-center justify-center text-white text-xs">✦</div>
           <h4 className="font-semibold text-indigo-900">{t.simulation.ai_title}</h4>
           <span className="text-xs bg-white text-indigo-600 border border-indigo-200 rounded-full px-2 py-0.5">
-            Ollama · {import.meta.env.VITE_OLLAMA_MODEL ?? 'qwen2.5:7b'}
+            Ollama · qwen2.5:7b
           </span>
         </div>
         {status === 'idle' && (
-          <button onClick={runInterpretation}
-            className="text-xs bg-indigo-600 text-white px-4 py-2 rounded-lg
-                       hover:bg-indigo-700 transition-colors font-medium">
+          <button onClick={run}
+            className="text-xs bg-indigo-600 text-white px-4 py-2 rounded-lg hover:bg-indigo-700 font-medium">
             {t.simulation.ai_btn}
           </button>
         )}
@@ -138,7 +132,6 @@ function AIInterpretation({ results }: { results: SimResults }) {
           </button>
         )}
       </div>
-
       {status === 'idle' && (
         <p className="text-sm text-indigo-700/70 italic">{t.simulation.ai_idle}</p>
       )}
@@ -166,9 +159,11 @@ function AIInterpretation({ results }: { results: SimResults }) {
 
 /* ── Main ───────────────────────────────────────────────────────────────────── */
 
+type Tab = 'economic' | 'education' | 'environment' | 'society' | 'governance'
+
 export default function SimulationResults({ results }: { results: SimResults }) {
   const { t } = useLanguage()
-  const [tab, setTab] = useState<'economic' | 'environment' | 'society'>('economic')
+  const [tab, setTab] = useState<Tab>('economic')
   const { meta, summary, series } = results
 
   const scenarioLabel: Record<string, string> = {
@@ -181,12 +176,14 @@ export default function SimulationResults({ results }: { results: SimResults }) 
     baseline:    'bg-slate-50 text-slate-600 border-slate-200',
     pessimistic: 'bg-rose-50 text-rose-700 border-rose-200',
   }
-  const tabLabel: Record<string, string> = {
-    economic:    t.simulation.tab_economic,
-    environment: t.simulation.tab_environment,
-    society:     t.simulation.tab_society,
-  }
-  const TAB_ICONS = { economic: '📈', environment: '🌱', society: '🤝' }
+
+  const TABS: { id: Tab; icon: string; label: string }[] = [
+    { id: 'economic',     icon: '📈', label: t.simulation.tab_economic },
+    { id: 'education',    icon: '🎓', label: t.simulation.tab_education },
+    { id: 'environment',  icon: '🌱', label: t.simulation.tab_environment },
+    { id: 'society',      icon: '🤝', label: t.simulation.tab_society },
+    { id: 'governance',   icon: '🏛', label: t.simulation.tab_governance },
+  ]
 
   const sc = meta.scenario ?? 'baseline'
 
@@ -197,13 +194,14 @@ export default function SimulationResults({ results }: { results: SimResults }) 
       policy:  (s[pol]  as number) * scale,
     }))
 
-  // KPI summary row
+  // Top-level KPI bar (one per domain)
   const KPI = [
-    { label: t.simulation.metric_gdp,    value: summary.gdp_delta_pct,       unit: '%',   good: true  },
-    { label: t.simulation.metric_gini,   value: summary.gini_delta,           unit: '',    good: false },
-    { label: t.simulation.metric_employment, value: summary.employment_delta*100, unit: ' pp', good: true  },
-    { label: t.simulation.metric_carbon, value: summary.carbon_delta_pct,     unit: '%',   good: false },
-    { label: t.simulation.metric_health, value: summary.health_delta*100,     unit: ' pp', good: true  },
+    { label: t.simulation.metric_gdp,        v: summary.gdp_delta_pct,       u: '%',   g: true  },
+    { label: t.simulation.metric_education,   v: summary.education_delta*100,  u: ' pp', g: true  },
+    { label: t.simulation.metric_carbon,      v: summary.carbon_delta_pct,    u: '%',   g: false },
+    { label: t.simulation.metric_wellbeing,   v: summary.wellbeing_delta*100, u: ' pp', g: true  },
+    { label: t.simulation.metric_health,      v: summary.health_delta*100,    u: ' pp', g: true  },
+    { label: t.simulation.metric_governance,  v: summary.governance_delta*100,u: ' pp', g: true  },
   ]
 
   return (
@@ -216,6 +214,11 @@ export default function SimulationResults({ results }: { results: SimResults }) 
             <p className="text-xs text-slate-500 mt-0.5">
               {meta.country.toUpperCase()} · {meta.n_agents.toLocaleString()} agents
               · {t.simulation.years_suffix(meta.horizon_years)}
+              {meta.poverty_line_eur && (
+                <span className="ml-2 text-slate-400">
+                  · {t.simulation.poverty_line_note(meta.poverty_line_eur)}
+                </span>
+              )}
             </p>
           </div>
           <div className="flex items-center gap-2">
@@ -234,46 +237,54 @@ export default function SimulationResults({ results }: { results: SimResults }) 
         )}
       </div>
 
-      {/* KPI row */}
-      <div className="grid grid-cols-3 md:grid-cols-5 gap-2">
+      {/* 6-domain KPI bar */}
+      <div className="grid grid-cols-3 md:grid-cols-6 gap-2">
         {KPI.map(k => (
-          <div key={k.label}
-            className="bg-white rounded-xl border border-slate-200 p-3 text-center shadow-sm">
-            <div className="text-xs text-slate-500 mb-1.5">{k.label}</div>
-            <DeltaChip value={k.value} unit={k.unit} positiveGood={k.good} size="md" />
-          </div>
+          <button key={k.label}
+            onClick={() => {
+              // map KPI to matching tab
+              if (k.label === t.simulation.metric_gdp) setTab('economic')
+              else if (k.label === t.simulation.metric_education) setTab('education')
+              else if (k.label === t.simulation.metric_carbon) setTab('environment')
+              else if (k.label === t.simulation.metric_wellbeing) setTab('society')
+              else if (k.label === t.simulation.metric_health) setTab('society')
+              else if (k.label === t.simulation.metric_governance) setTab('governance')
+            }}
+            className="bg-white rounded-xl border border-slate-200 p-3 text-center shadow-sm hover:shadow-md transition-shadow cursor-pointer">
+            <div className="text-xs text-slate-500 mb-1.5 truncate">{k.label}</div>
+            <DeltaChip value={k.v} unit={k.u} positiveGood={k.g} size="md" />
+          </button>
         ))}
       </div>
 
       {/* Tabs */}
       <div className="bg-white rounded-2xl border border-slate-200 shadow-sm overflow-hidden">
-        <div className="flex border-b border-slate-100">
-          {(['economic', 'environment', 'society'] as const).map(tb => (
-            <button
-              key={tb}
-              onClick={() => setTab(tb)}
-              className={`flex-1 py-3 text-sm font-medium transition-colors flex items-center
-                justify-center gap-1.5
-                ${tab === tb
+        {/* Tab bar */}
+        <div className="flex border-b border-slate-100 overflow-x-auto">
+          {TABS.map(tb => (
+            <button key={tb.id} onClick={() => setTab(tb.id)}
+              className={`flex-1 min-w-0 py-2.5 text-xs font-medium transition-colors
+                flex items-center justify-center gap-1 px-2
+                ${tab === tb.id
                   ? 'text-indigo-700 border-b-2 border-indigo-500 bg-indigo-50/50'
                   : 'text-slate-500 hover:text-slate-700 hover:bg-slate-50'}`}
             >
-              <span>{TAB_ICONS[tb]}</span>
-              <span>{tabLabel[tb]}</span>
+              <span>{tb.icon}</span>
+              <span className="hidden sm:inline truncate">{tb.label}</span>
             </button>
           ))}
         </div>
 
         <div className="p-5 space-y-5">
 
-          {/* ── Economic ── */}
+          {/* ── 📈 Économie ── */}
           {tab === 'economic' && <>
-            <div className="grid grid-cols-2 gap-4">
+            <div className="grid grid-cols-2 gap-3">
               {[
-                { label: t.simulation.metric_gdp,    v: summary.gdp_delta_pct,       u: '%',   g: true  },
-                { label: t.simulation.metric_gini,   v: summary.gini_delta,           u: '',    g: false },
-                { label: t.simulation.metric_employment, v: summary.employment_delta*100, u: ' pp', g: true  },
-                { label: t.simulation.metric_poverty, v: summary.poverty_delta*100,   u: ' pp', g: false },
+                { label: t.simulation.metric_gdp,        v: summary.gdp_delta_pct,         u: '%',   g: true  },
+                { label: t.simulation.metric_gini,       v: summary.gini_delta,             u: '',    g: false },
+                { label: t.simulation.metric_employment, v: summary.employment_delta*100,   u: ' pp', g: true  },
+                { label: t.simulation.metric_poverty,    v: summary.poverty_delta*100,      u: ' pp', g: false },
               ].map(k => (
                 <div key={k.label} className="bg-slate-50 rounded-xl p-3">
                   <div className="text-xs text-slate-500 mb-0.5">{k.label}</div>
@@ -293,7 +304,6 @@ export default function SimulationResults({ results }: { results: SimResults }) 
             <TimelineChart data={mk('poverty_control','poverty_policy',100)}
               label={`${t.simulation.metric_poverty} (%)`} color="#f43f5e"
               formatY={v => `${v.toFixed(1)}%`} />
-
             {/* Decile table */}
             <div>
               <h5 className="text-xs font-semibold text-slate-600 uppercase tracking-wide mb-2">
@@ -315,7 +325,7 @@ export default function SimulationResults({ results }: { results: SimResults }) 
                       <tr key={dec} className="border-b border-slate-50 hover:bg-slate-50">
                         <td className="py-1 pr-3 font-medium text-slate-700">D{+dec + 1}</td>
                         <td className="py-1 pr-3 text-right tabular-nums">
-                          {d.mean_income.toLocaleString(undefined, { maximumFractionDigits: 0 })}€
+                          {d.mean_income.toLocaleString(undefined, {maximumFractionDigits: 0})}€
                         </td>
                         <td className="py-1 pr-3 text-right tabular-nums">
                           {(d.employment_rate * 100).toFixed(1)}%
@@ -334,9 +344,64 @@ export default function SimulationResults({ results }: { results: SimResults }) 
             </div>
           </>}
 
-          {/* ── Environment ── */}
+          {/* ── 🎓 Éducation ── */}
+          {tab === 'education' && <>
+            <div className="grid grid-cols-1 gap-3">
+              <div className="bg-amber-50 rounded-xl p-4">
+                <div className="text-xs text-amber-700 mb-1">{t.simulation.metric_education}</div>
+                <DeltaChip value={summary.education_delta*100} unit=" pp" positiveGood size="lg" />
+                <p className="text-xs text-amber-600 mt-1.5">
+                  {t.simulation.avg_score_01} — {t.simulation.vs_control}
+                </p>
+              </div>
+            </div>
+            <TimelineChart data={mk('education_control','education_policy',100)}
+              label={`${t.simulation.metric_education} (%)`} color="#f59e0b"
+              formatY={v => `${v.toFixed(1)}%`} />
+            {/* Decile education table */}
+            {Object.values(results.demographics).some(d => d.mean_education != null) && (
+              <div>
+                <h5 className="text-xs font-semibold text-slate-600 uppercase tracking-wide mb-2">
+                  {t.simulation.col_education} — {t.simulation.decile_table_title}
+                </h5>
+                <div className="overflow-x-auto">
+                  <table className="w-full text-xs text-left">
+                    <thead>
+                      <tr className="text-slate-400 border-b border-slate-100">
+                        <th className="pb-1.5 pr-3">{t.simulation.col_decile}</th>
+                        <th className="pb-1.5 pr-3 text-right">{t.simulation.col_income}</th>
+                        <th className="pb-1.5 text-right">{t.simulation.col_education}</th>
+                      </tr>
+                    </thead>
+                    <tbody>
+                      {Object.entries(results.demographics).map(([dec, d]) => (
+                        <tr key={dec} className="border-b border-slate-50 hover:bg-slate-50">
+                          <td className="py-1 pr-3 font-medium text-slate-700">D{+dec + 1}</td>
+                          <td className="py-1 pr-3 text-right tabular-nums">
+                            {d.mean_income.toLocaleString(undefined, {maximumFractionDigits: 0})}€
+                          </td>
+                          <td className="py-1 text-right tabular-nums">
+                            {d.mean_education != null
+                              ? `${(d.mean_education * 100).toFixed(1)}%`
+                              : '—'}
+                          </td>
+                        </tr>
+                      ))}
+                    </tbody>
+                  </table>
+                </div>
+              </div>
+            )}
+            <div className="bg-slate-50 rounded-xl p-4 text-xs text-slate-600 space-y-1">
+              <p className="font-medium text-slate-700">{t.simulation.methodology_title}</p>
+              <p>Mincer equation: +3–8% income per additional year of schooling (OECD EAG 2024).
+                 UNESCO HDI composite: literacy rate × enrolment × years of schooling.</p>
+            </div>
+          </>}
+
+          {/* ── 🌱 Environnement ── */}
           {tab === 'environment' && <>
-            <div className="grid grid-cols-2 gap-4">
+            <div className="grid grid-cols-2 gap-3">
               <div className="bg-emerald-50 rounded-xl p-3">
                 <div className="text-xs text-emerald-700 mb-0.5">{t.simulation.metric_carbon}</div>
                 <DeltaChip value={summary.carbon_delta_pct} unit="%" positiveGood={false} size="lg" />
@@ -360,34 +425,56 @@ export default function SimulationResults({ results }: { results: SimResults }) 
             </div>
           </>}
 
-          {/* ── Society ── */}
+          {/* ── 🤝 Société & Santé ── */}
           {tab === 'society' && <>
-            <div className="grid grid-cols-2 gap-4">
-              <div className="bg-blue-50 rounded-xl p-3">
-                <div className="text-xs text-blue-700 mb-0.5">{t.simulation.metric_health}</div>
-                <DeltaChip value={summary.health_delta*100} unit=" pp" positiveGood size="lg" />
-              </div>
-              <div className="bg-blue-50 rounded-xl p-3">
-                <div className="text-xs text-blue-700 mb-0.5">{t.simulation.metric_trust}</div>
-                <DeltaChip value={summary.trust_delta*100} unit=" pp" positiveGood size="lg" />
-              </div>
-              <div className="bg-blue-50 rounded-xl p-3 col-span-2">
-                <div className="text-xs text-blue-700 mb-0.5">{t.simulation.metric_wellbeing}</div>
-                <DeltaChip value={summary.wellbeing_delta*100} unit=" pp" positiveGood size="lg" />
-              </div>
+            <div className="grid grid-cols-2 gap-3">
+              {[
+                { label: t.simulation.metric_wellbeing, v: summary.wellbeing_delta*100, g: true  },
+                { label: t.simulation.metric_trust,     v: summary.trust_delta*100,     g: true  },
+                { label: t.simulation.metric_health,    v: summary.health_delta*100,    g: true  },
+                { label: t.simulation.metric_poverty,   v: summary.poverty_delta*100,   g: false },
+              ].map(k => (
+                <div key={k.label} className="bg-blue-50 rounded-xl p-3">
+                  <div className="text-xs text-blue-700 mb-0.5">{k.label}</div>
+                  <DeltaChip value={k.v} unit=" pp" positiveGood={k.g} size="lg" />
+                </div>
+              ))}
             </div>
+            <TimelineChart data={mk('wellbeing_control','wellbeing_policy',100)}
+              label={`${t.simulation.metric_wellbeing} (%)`} color="#06b6d4"
+              formatY={v => `${v.toFixed(1)}%`} />
             <TimelineChart data={mk('health_control','health_policy',100)}
               label={`${t.simulation.metric_health} (%)`} color="#3b82f6"
               formatY={v => `${v.toFixed(1)}%`} />
             <TimelineChart data={mk('trust_control','trust_policy',100)}
               label={`${t.simulation.metric_trust} (%)`} color="#8b5cf6"
               formatY={v => `${v.toFixed(1)}%`} />
-            <TimelineChart data={mk('wellbeing_control','wellbeing_policy',100)}
-              label={`${t.simulation.metric_wellbeing} (%)`} color="#06b6d4"
-              formatY={v => `${v.toFixed(1)}%`} />
             <div className="bg-slate-50 rounded-xl p-4 text-xs text-slate-600 space-y-1">
               <p className="font-medium text-slate-700">{t.simulation.sources_social_title}</p>
               <p>{t.simulation.sources_social_body}</p>
+            </div>
+          </>}
+
+          {/* ── 🏛 Gouvernance ── */}
+          {tab === 'governance' && <>
+            <div className="grid grid-cols-1 gap-3">
+              <div className="bg-violet-50 rounded-xl p-4">
+                <div className="text-xs text-violet-700 mb-1">{t.simulation.metric_governance}</div>
+                <DeltaChip value={summary.governance_delta*100} unit=" pp" positiveGood size="lg" />
+                <p className="text-xs text-violet-600 mt-1.5">
+                  Helliwell et al. (2018) — {t.simulation.vs_control}
+                </p>
+              </div>
+            </div>
+            <TimelineChart data={mk('governance_control','governance_policy',100)}
+              label={`${t.simulation.metric_governance} (%)`} color="#7c3aed"
+              formatY={v => `${v.toFixed(1)}%`} />
+            <div className="bg-slate-50 rounded-xl p-4 text-xs text-slate-600 space-y-1">
+              <p className="font-medium text-slate-700">{t.simulation.methodology_title}</p>
+              <p>Helliwell et al. (2018): trust in institutions correlated with collectivism
+                 (Hofstede) and inequality (Gini). OECD Government at a Glance 2023:
+                 direct policy effects on institutional legitimacy.
+                 World Values Survey calibration per country.</p>
             </div>
           </>}
         </div>

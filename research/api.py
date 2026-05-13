@@ -450,7 +450,7 @@ class SimulateRequest(BaseModel):
     country:        str = "fr"
     domain:         str = "economy"
     body:           str = ""
-    n_agents:       int = 5_000
+    n_agents:       int = 10_000
     seed:           int = 42
     horizon_years:  int | None = None   # overrides policy horizon if given
     scenario:       str = "baseline"    # baseline | optimistic | pessimistic

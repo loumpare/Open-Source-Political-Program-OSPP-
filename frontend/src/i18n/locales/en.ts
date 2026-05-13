@@ -123,6 +123,10 @@ export const en: Translations = {
     metric_green: 'Green behaviour',
     metric_health: 'Health',
     metric_trust: 'Social trust',
+    metric_education: 'Education score',
+    metric_governance: 'Institutional trust',
+    tab_education: 'Education',
+    tab_governance: 'Governance',
 
     chart_without: 'Without policy',
     chart_with: 'With policy',
@@ -133,6 +137,9 @@ export const en: Translations = {
     col_employment: 'Employment',
     col_wellbeing: 'Wellbeing',
     col_carbon: 'Carbon',
+    col_education: 'Education',
+    col_governance: 'Governance',
+    poverty_line_note: (n: number) => `Absolute poverty line: €${n.toLocaleString('en-US')}/month`,
 
     ai_title: 'AI Analysis',
     ai_idle: 'Click "Interpret" to have the local Ollama model analyse the results.',

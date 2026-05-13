@@ -121,6 +121,10 @@ export const fr = {
     metric_green: 'Comportements verts',
     metric_health: 'Santé',
     metric_trust: 'Confiance sociale',
+    metric_education: 'Score éducation',
+    metric_governance: 'Confiance institutionnelle',
+    tab_education: 'Éducation',
+    tab_governance: 'Gouvernance',
 
     chart_without: 'Sans politique',
     chart_with: 'Avec politique',
@@ -131,6 +135,9 @@ export const fr = {
     col_employment: 'Emploi',
     col_wellbeing: 'Bien-être',
     col_carbon: 'Carbone',
+    col_education: 'Éducation',
+    col_governance: 'Gouvernance',
+    poverty_line_note: (n: number) => `Seuil de pauvreté absolu : ${n.toLocaleString('fr-FR')} €/mois`,
 
     ai_title: 'Analyse IA',
     ai_idle: "Cliquez sur « Interpréter » pour que le modèle local Ollama analyse les résultats.",

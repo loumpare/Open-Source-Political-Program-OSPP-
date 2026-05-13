@@ -123,6 +123,10 @@ export const de: Translations = {
     metric_green: 'Grünes Verhalten',
     metric_health: 'Gesundheit',
     metric_trust: 'Soziales Vertrauen',
+    metric_education: 'Bildungsscore',
+    metric_governance: 'Institutionelles Vertrauen',
+    tab_education: 'Bildung',
+    tab_governance: 'Governance',
 
     chart_without: 'Ohne Maßnahme',
     chart_with: 'Mit Maßnahme',
@@ -133,6 +137,9 @@ export const de: Translations = {
     col_employment: 'Beschäftigung',
     col_wellbeing: 'Wohlbefinden',
     col_carbon: 'CO₂',
+    col_education: 'Bildung',
+    col_governance: 'Governance',
+    poverty_line_note: (n: number) => `Absolute Armutsgrenze: ${n.toLocaleString('de-DE')} €/Monat`,
 
     ai_title: 'KI-Analyse',
     ai_idle: 'Klicken Sie auf „Interpretieren", damit das lokale Ollama-Modell die Ergebnisse analysiert.',

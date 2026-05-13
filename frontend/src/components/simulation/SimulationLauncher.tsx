@@ -27,7 +27,7 @@ interface Props {
 export default function SimulationLauncher({ onResults, onLoading }: Props) {
   const { t } = useLanguage()
   const [proposalId, setProposalId] = useState(PROPOSALS[0].id)
-  const [nAgents, setNAgents]       = useState(5_000)
+  const [nAgents, setNAgents]       = useState(10_000)
   const [years, setYears]           = useState(5)
   const [scenario, setScenario]     = useState('baseline')
   const [seed, setSeed]             = useState(42)
