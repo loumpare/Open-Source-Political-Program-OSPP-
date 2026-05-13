@@ -2,10 +2,10 @@ import { useState, useMemo } from 'react'
 import { useSearchParams } from 'react-router-dom'
 import { Search, SlidersHorizontal, X } from 'lucide-react'
 import { motion, AnimatePresence } from 'framer-motion'
-import { PROPOSALS, DOMAIN_META, Domain } from '../data/proposals'
+import { PROPOSALS, DOMAIN_META, RESEARCH_STATS, Domain } from '../data/proposals'
 import ProposalCard from '../components/proposal/ProposalCard'
 
-const COUNTRIES = ['All', 'France', 'United States', 'Global']
+const COUNTRIES = ['All', ...Array.from(new Set(PROPOSALS.map(p => p.country))).sort()]
 const DOMAINS: { key: string; label: string }[] = [
   { key: 'all', label: 'All domains' },
   ...Object.entries(DOMAIN_META).map(([k, v]) => ({ key: k, label: `${v.icon} ${v.label}` })),
@@ -45,7 +45,7 @@ export default function Proposals() {
       <div className="py-12">
         <h1 className="text-4xl font-black text-slate-900 mb-3">Proposals</h1>
         <p className="text-slate-500 text-lg">
-          {PROPOSALS.length} open-source policy proposals backed by {208} peer-reviewed sources.
+          {PROPOSALS.length} open-source policy proposals backed by {RESEARCH_STATS.sources} peer-reviewed sources.
         </p>
       </div>
 

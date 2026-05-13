@@ -14,11 +14,7 @@ export default function ProposalDetail() {
   const domain = DOMAIN_META[proposal.domain]
   const status = STATUS_META[proposal.status]
 
-  const domainStripe =
-    proposal.domain === 'economy' ? 'from-amber-400 to-amber-300' :
-    proposal.domain === 'education' ? 'from-purple-400 to-purple-300' :
-    proposal.domain === 'environment' ? 'from-emerald-400 to-emerald-300' :
-    'from-blue-400 to-blue-300'
+  const domainStripe = `${domain.gradientFrom} ${domain.gradientTo}`
 
   return (
     <div className="pt-16">

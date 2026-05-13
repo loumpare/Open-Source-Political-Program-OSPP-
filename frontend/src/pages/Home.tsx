@@ -1,14 +1,16 @@
 import { Link } from 'react-router-dom'
 import { ArrowRight, BookOpen, Users, FlaskConical, Globe2 } from 'lucide-react'
 import { motion } from 'framer-motion'
-import { PROPOSALS, DOMAIN_META } from '../data/proposals'
+import { PROPOSALS, DOMAIN_META, RESEARCH_STATS } from '../data/proposals'
 import ProposalCard from '../components/proposal/ProposalCard'
 
+const uniqueCountries = new Set(PROPOSALS.map(p => p.country)).size
+
 const STATS = [
-  { icon: BookOpen,     value: '208',    label: 'Peer-reviewed sources' },
-  { icon: FlaskConical, value: '3,660',  label: 'Indexed research chunks' },
-  { icon: Users,        value: '6',      label: 'Active proposals' },
-  { icon: Globe2,       value: '3',      label: 'Countries covered' },
+  { icon: BookOpen,     value: RESEARCH_STATS.sources.toLocaleString(), label: 'Peer-reviewed sources' },
+  { icon: FlaskConical, value: RESEARCH_STATS.chunks.toLocaleString(),  label: 'Indexed research chunks' },
+  { icon: Users,        value: String(PROPOSALS.length),                label: 'Active proposals' },
+  { icon: Globe2,       value: String(uniqueCountries),                 label: 'Countries covered' },
 ]
 
 const DOMAINS = Object.entries(DOMAIN_META).map(([key, val]) => ({

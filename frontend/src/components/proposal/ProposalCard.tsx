@@ -16,11 +16,7 @@ export default function ProposalCard({ proposal }: Props) {
       className="group block rounded-2xl border border-slate-200 bg-white hover:border-slate-300 hover:shadow-lg hover:shadow-slate-100 transition-all duration-200 overflow-hidden"
     >
       {/* Domain stripe */}
-      <div className={`h-1 w-full ${
-        proposal.domain === 'economy' ? 'bg-amber-400' :
-        proposal.domain === 'education' ? 'bg-purple-400' :
-        proposal.domain === 'environment' ? 'bg-emerald-400' : 'bg-blue-400'
-      }`} />
+      <div className={`h-1 w-full ${domain.stripe}`} />
 
       <div className="p-5 space-y-4">
         {/* Header */}

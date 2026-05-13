@@ -676,13 +676,19 @@ The Danish 37h works because it was negotiated (not imposed), accompanied by man
   },
 ]
 
-export const DOMAIN_META: Record<Domain, { label: string; color: string; bg: string; icon: string }> = {
-  economy:     { label: 'Economy',     color: 'text-amber-700',   bg: 'bg-amber-50 border-amber-200',     icon: '📈' },
-  education:   { label: 'Education',   color: 'text-purple-700',  bg: 'bg-purple-50 border-purple-200',   icon: '🎓' },
-  environment: { label: 'Environment', color: 'text-emerald-700', bg: 'bg-emerald-50 border-emerald-200', icon: '🌱' },
-  social:      { label: 'Social',      color: 'text-blue-700',    bg: 'bg-blue-50 border-blue-200',       icon: '🤝' },
-  health:      { label: 'Health',      color: 'text-rose-700',    bg: 'bg-rose-50 border-rose-200',       icon: '🏥' },
-  governance:  { label: 'Governance',  color: 'text-slate-700',   bg: 'bg-slate-50 border-slate-300',     icon: '🏛️' },
+export const DOMAIN_META: Record<Domain, { label: string; color: string; bg: string; icon: string; stripe: string; gradientFrom: string; gradientTo: string }> = {
+  economy:     { label: 'Economy',     color: 'text-amber-700',   bg: 'bg-amber-50 border-amber-200',     icon: '📈', stripe: 'bg-amber-400',   gradientFrom: 'from-amber-400',   gradientTo: 'to-amber-300'   },
+  education:   { label: 'Education',   color: 'text-purple-700',  bg: 'bg-purple-50 border-purple-200',   icon: '🎓', stripe: 'bg-purple-400',  gradientFrom: 'from-purple-400',  gradientTo: 'to-purple-300'  },
+  environment: { label: 'Environment', color: 'text-emerald-700', bg: 'bg-emerald-50 border-emerald-200', icon: '🌱', stripe: 'bg-emerald-400', gradientFrom: 'from-emerald-400', gradientTo: 'to-emerald-300' },
+  social:      { label: 'Social',      color: 'text-blue-700',    bg: 'bg-blue-50 border-blue-200',       icon: '🤝', stripe: 'bg-blue-400',    gradientFrom: 'from-blue-400',    gradientTo: 'to-blue-300'    },
+  health:      { label: 'Health',      color: 'text-rose-700',    bg: 'bg-rose-50 border-rose-200',       icon: '🏥', stripe: 'bg-rose-400',    gradientFrom: 'from-rose-400',    gradientTo: 'to-rose-300'    },
+  governance:  { label: 'Governance',  color: 'text-slate-700',   bg: 'bg-slate-50 border-slate-300',     icon: '🏛️', stripe: 'bg-slate-400',   gradientFrom: 'from-slate-400',   gradientTo: 'to-slate-300'   },
+}
+
+export const RESEARCH_STATS = {
+  sources: 262,
+  chunks: 4723,
+  domains: 5,
 }
 
 export const STATUS_META: Record<Status, { label: string; color: string }> = {
