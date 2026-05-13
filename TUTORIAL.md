@@ -21,28 +21,44 @@
 
 ## 1. Prerequisites
 
-| Tool | Version | Purpose |
+**Strictly required (frontend only):**
+
+| Tool | Version | Check |
+|------|---------|-------|
+| Node.js | 18+ | `node --version` |
+| npm | 9+ | `npm --version` |
+| Git | any | `git --version` |
+
+**Required for the full stack (backend + database):**
+
+| Tool | Version | Install |
 |------|---------|---------|
-| Conda / Miniconda | any | Python + Node.js environment |
-| Docker + Docker Compose | 24+ | Full stack (backend, database, Redis) |
-| Git | any | Version control |
+| Docker + Docker Compose | 24+ | See below |
 
-Check if you have them:
+**Required for the research pipeline:**
 
-```bash
-conda --version
-docker --version
-git --version
+| Tool | Version | Check |
+|------|---------|-------|
+| Python 3.10+ | 3.10+ | `python3 --version` |
+| pip | any | `pip --version` |
+
+### Project path
+
+All commands below use the correct path:
+
+```
+~/Bureau/Project_Claude/OSPP/
 ```
 
-The `ospp` conda environment (Python 3.11 + Node.js 20) was created during setup.
-If it doesn't exist yet, create it:
+### Install Docker (if missing)
 
 ```bash
-conda create -n ospp python=3.11 -y
-conda activate ospp
-conda install -c conda-forge nodejs=20 -y
-cd ~/Bureau/OSPP/frontend && npm install
+# Ubuntu / Debian
+sudo apt update
+sudo apt install -y docker.io docker-compose-v2
+sudo usermod -aG docker $USER
+newgrp docker
+docker --version   # should show 24+
 ```
 
 ---
@@ -52,14 +68,16 @@ cd ~/Bureau/OSPP/frontend && npm install
 No Docker required. The frontend runs entirely with static data — no backend needed.
 
 ```bash
-conda activate ospp
-cd ~/Bureau/OSPP/frontend
+cd ~/Bureau/Project_Claude/OSPP/frontend
+npm install
 npm run dev
 ```
 
 Open **http://localhost:3000** in your browser.
 
 To stop: `Ctrl+C`
+
+> **First run:** `npm install` takes ~30 seconds and downloads ~150 MB of packages into `node_modules/`. You only run it once (or after a `git pull` that changes `package.json`).
 
 ---
 
@@ -70,7 +88,7 @@ Starts the React frontend, FastAPI backend, PostgreSQL database, Redis cache, an
 **Step 1 — Configure environment variables:**
 
 ```bash
-cd ~/Bureau/OSPP
+cd ~/Bureau/Project_Claude/OSPP
 cp .env.example .env
 ```
 
@@ -114,7 +132,7 @@ docker compose down -v
 Go to **http://localhost:3000/proposals** to see all active proposals.
 
 Use the filters to narrow down:
-- **Domain** — Economy, Education, Environment, Social
+- **Domain** — Economy, Education, Environment, Social, Health, Governance
 - **Country** — France, United States, Global
 - **Search bar** — search by keyword, tag, or topic
 
@@ -122,7 +140,7 @@ Use the filters to narrow down:
 
 Click any proposal card to open the detail page. Each proposal shows:
 - Full policy text with citations
-- **Scientific sources** from the research catalog (208 peer-reviewed papers)
+- **Scientific sources** from the research catalog (262 peer-reviewed papers)
 - **Impact estimate** — population affected, estimated cost
 - **Community vote** — current support/oppose percentages
 
@@ -186,9 +204,12 @@ Proposals are markdown files in `propositions/{country_code}/{domain}/`.
 propositions/
 ├── fr/
 │   ├── economie/    ECO-FR-001_salaire_minimum.md
-│   └── social/      SOC-FR-001_retraites.md
+│   ├── social/      SOC-FR-001_retraites.md
+│   ├── sante/       HLT-FR-001_sante_mentale.md
+│   └── education/   EDU-FR-001_universite.md
 ├── us/
-│   └── economy/     ECO-US-001_federal_minimum_wage.md
+│   ├── economy/     ECO-US-001_federal_minimum_wage.md
+│   └── health/      HLT-US-001_medicare_expansion.md
 └── global/
     └── governance/  GOV-GLOBAL-001_open_source_government.md
 ```
@@ -200,7 +221,7 @@ propositions/
 
 ```markdown
 ---
-id: ECO-FR-002
+id: ECO-FR-004
 country: fr
 domain: economie
 title: "Your proposal title"
@@ -231,21 +252,42 @@ Full text.
 > Filled automatically after Mesa simulation
 ```
 
-3. Open a Pull Request on GitHub — the community votes on it
+3. Add the proposal data to `frontend/src/data/proposals.ts` (use an existing entry as template)
+4. Open a Pull Request on GitHub — the community votes on it
 
-**ID format:** `{DOMAIN_3}-{COUNTRY}-{NNN}` — e.g. `ECO-FR-002`, `ENV-US-001`, `GOV-GLOBAL-002`
+**ID format:** `{DOMAIN_3}-{COUNTRY}-{NNN}` — e.g. `ECO-FR-004`, `HLT-US-002`, `GOV-GLOBAL-003`
+
+**Available domains:**
+
+| Code | Label | Countries |
+|------|-------|-----------|
+| `economy` / `economie` | Economy | fr, us, global |
+| `education` | Education | fr, us |
+| `environment` / `environnement` | Environment | fr, us |
+| `social` | Social | fr, us |
+| `health` / `sante` | Health | fr, us |
+| `governance` | Governance | global |
 
 ---
 
 ## 7. Run the research pipeline
 
-The research pipeline downloads and indexes the 208+ peer-reviewed papers backing the proposals.
+The research pipeline downloads and indexes the 262+ peer-reviewed papers backing the proposals.
 
-**Activate the environment:**
+**Setup a Python virtual environment (first time only):**
 
 ```bash
-conda activate ospp
-cd ~/Bureau/OSPP
+cd ~/Bureau/Project_Claude/OSPP
+python3 -m venv .venv
+source .venv/bin/activate
+pip install -r research/requirements-research.txt
+```
+
+To re-activate later:
+
+```bash
+cd ~/Bureau/Project_Claude/OSPP
+source .venv/bin/activate
 ```
 
 **Download PDFs for a domain:**
@@ -255,9 +297,10 @@ python research/pipeline.py download --domain economy
 python research/pipeline.py download --domain education
 python research/pipeline.py download --domain environment
 python research/pipeline.py download --domain social
+python research/pipeline.py download --domain health
 ```
 
-PDFs are saved to `research/{domain}/pdfs/` (~350 MB total across all domains).
+PDFs are saved to `research/{domain}/pdfs/` (~440 MB total across all domains).
 Back these up to Google Drive: `OSPP/research/{domain}/pdfs/`
 
 **Build the vector database (semantic search):**
@@ -274,16 +317,19 @@ This extracts text, chunks it into ~500-word passages, embeds with `all-MiniLM-L
 python research/pipeline.py query --domain economy --q "minimum wage employment effects"
 python research/pipeline.py query --domain environment --q "carbon pricing emissions trading"
 python research/pipeline.py query --domain education --q "early childhood long term outcomes"
+python research/pipeline.py query --domain health --q "universal health coverage mental health"
 ```
 
-**Current index:**
+**Current research index:**
 
-| Domain | Docs | Chunks |
+| Domain | Docs | Status |
 |--------|------|--------|
-| Economy | 61 | 1,847 |
-| Education | 47 | 1,008 |
-| Environment | 52 | 805 |
-| Social | 48 | pending |
+| Economy | 61 | ✅ catalogued |
+| Education | 47 | ✅ catalogued |
+| Environment | 52 | ✅ catalogued |
+| Social | 48 | ✅ catalogued |
+| Health | 54 | ✅ catalogued |
+| **Total** | **262** | |
 
 ---
 
@@ -292,8 +338,7 @@ python research/pipeline.py query --domain education --q "early childhood long t
 Build an optimized static bundle ready to deploy:
 
 ```bash
-conda activate ospp
-cd ~/Bureau/OSPP/frontend
+cd ~/Bureau/Project_Claude/OSPP/frontend
 npm run build
 ```
 
@@ -307,7 +352,7 @@ Output is in `frontend/dist/`. Deploy it to any static host:
 **Vercel:**
 ```bash
 npm install -g vercel
-cd ~/Bureau/OSPP/frontend
+cd ~/Bureau/Project_Claude/OSPP/frontend
 vercel --prod
 ```
 
@@ -333,7 +378,7 @@ OSPP/
 │   ├── src/
 │   │   ├── components/     Navbar, Footer, ProposalCard, VoteWidget, InstallPrompt…
 │   │   ├── pages/          Home, Proposals, ProposalDetail
-│   │   ├── data/           proposals.ts (static proposal data)
+│   │   ├── data/           proposals.ts (18 static proposals across 6 domains)
 │   │   └── hooks/          useVote.ts, usePwa.ts
 │   └── public/             Icons, apple-touch-icon, favicon
 │
@@ -350,17 +395,18 @@ OSPP/
 │   ├── agents.py           CitizenAgent with multi-country demographic profiles
 │   └── run.py              CLI: python simulation/run.py --agents 1000 --steps 5
 │
-├── research/               Scientific knowledge base
-│   ├── pipeline.py         download → embed → query (conda activate ospp)
+├── research/               Scientific knowledge base (262 papers)
+│   ├── pipeline.py         download → embed → query
 │   ├── RESEARCH_LOG.md     History of all search sessions
 │   ├── economy/CATALOG.md  61 documents with direct PDF URLs
-│   ├── education/CATALOG.md
-│   ├── environment/CATALOG.md
-│   └── social/CATALOG.md
+│   ├── education/CATALOG.md  47 documents
+│   ├── environment/CATALOG.md  52 documents
+│   ├── social/CATALOG.md  48 documents
+│   └── health/CATALOG.md  54 documents
 │
-├── propositions/           Proposal markdown files
-│   ├── fr/                 France (economie, social, environnement, education)
-│   ├── us/                 United States (economy)
+├── propositions/           Proposal markdown files (18 proposals)
+│   ├── fr/                 France (economie, social, environnement, education, sante)
+│   ├── us/                 United States (economy, social, environment, education, health)
 │   └── global/             Universal (governance)
 │
 ├── CONTRIBUTING.md         How to add proposals and contribute code
@@ -374,25 +420,36 @@ OSPP/
 ## Useful commands — cheat sheet
 
 ```bash
-# Start frontend only
-conda activate ospp && cd ~/Bureau/OSPP/frontend && npm run dev
+# ── Frontend (no Docker needed) ──────────────────────────────────────────────
+cd ~/Bureau/Project_Claude/OSPP/frontend
+npm install          # first time only
+npm run dev          # http://localhost:3000
 
-# Start full stack
-cd ~/Bureau/OSPP && docker compose up
+# ── Full stack ────────────────────────────────────────────────────────────────
+cd ~/Bureau/Project_Claude/OSPP
+docker compose up            # start everything
+docker compose down          # stop
+docker compose down -v       # stop + wipe database
 
-# Build for production
-cd ~/Bureau/OSPP/frontend && conda run -n ospp npm run build
-
-# Run simulation locally
-conda activate ospp && cd ~/Bureau/OSPP
-python simulation/run.py --agents 1000 --steps 5 --seed 42
-
-# Download research papers (economy)
+# ── Research pipeline ─────────────────────────────────────────────────────────
+cd ~/Bureau/Project_Claude/OSPP
+source .venv/bin/activate    # activate Python environment
 python research/pipeline.py download --domain economy
-
-# Semantic search
+python research/pipeline.py embed --domain economy
 python research/pipeline.py query --domain economy --q "your question"
 
-# Git push
-git add . && git commit -m "your message" && git push
+# ── Production build ──────────────────────────────────────────────────────────
+cd ~/Bureau/Project_Claude/OSPP/frontend
+npm run build                # output in frontend/dist/
+npm run preview              # preview at http://localhost:4173
+
+# ── Simulation ────────────────────────────────────────────────────────────────
+cd ~/Bureau/Project_Claude/OSPP
+source .venv/bin/activate
+python simulation/run.py --agents 1000 --steps 5 --seed 42
+
+# ── Git ───────────────────────────────────────────────────────────────────────
+git add propositions/ frontend/src/data/proposals.ts
+git commit -m "feat: new proposal XYZ"
+git push
 ```
