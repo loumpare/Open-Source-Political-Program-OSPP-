@@ -515,6 +515,131 @@ Evidence from existing state programmes:
     tags: ['healthcare', 'Medicare', 'public option', 'insurance', 'federal policy'],
   },
 
+  // ── Denmark 🇩🇰 ───────────────────────────────────────────────────────────
+  {
+    id: 'ECO-DK-001',
+    country: 'Denmark',
+    countryFlag: '🇩🇰',
+    domain: 'economy',
+    title: 'Flexicurity — the golden triangle: flexibility + security + training',
+    titleFr: 'Flexicurité — le triangle d\'or : flexibilité + sécurité + formation',
+    summary: 'Adopt the Danish flexicurity model: easy dismissal rules for employers, 90% wage unemployment benefits for 2 years, and intensive active labour market policies (ALMP) funded at 2% of GDP.',
+    content: `The Danish "golden triangle" links three mutually reinforcing pillars — none works without the other two:
+
+**1. Labour market flexibility:**
+- 9-month trial period (vs. 2 months in France)
+- Annual job turnover ~30% (vs. 10–15% in France/US)
+- Dismissal without cause possible for employers with <10 employees
+
+**2. Income security:**
+- Unemployment benefit: 90% of last salary (capped at ~€2,500/month)
+- Duration: up to 2 years
+- Access: anyone who worked ≥52 weeks in the past 3 years
+
+**3. Active Labour Market Policies (ALMP):**
+- ALMP spending: 2.0% of GDP (vs. 0.3% in France, 0.1% in US)
+- Mandatory training plan from month 3 of unemployment
+- 9 weeks of funded training per year guaranteed to all unemployed workers
+- 1 employment counsellor per 25 unemployed (vs. 1 per 200 in France)
+
+Outcomes: unemployment 4.5% (2024), #1 job satisfaction in Europe, intergenerational income correlation 0.15 (vs. 0.45 in the US — Chetty et al., Science 2014).
+
+Landersø & Heckman (NBER) nuance: much of Denmark's mobility advantage comes from wage compression (high minimum wages) rather than true mobility — the model raises the floor, not just redistributes.`,
+    status: 'draft',
+    author: 'community',
+    date: '2026-05-13',
+    impactStatement: 'Unemployment reduction −1.5 to −2 pp over 10 years. +25% annual job-to-job transitions.',
+    populationAffected: 'All workers and employers (active labour market)',
+    estimatedCost: '+€15B/year net (ALMP + improved unemployment), partially offset by lower long-term unemployment.',
+    sources: [
+      { label: 'Andersen & Svarer — Flexicurity: Labour Market Performance in Denmark (IZA DP 2532, 2007)', year: 2007 },
+      { label: 'Landersø & Heckman — The Scandinavian Fantasy (NBER w20100)', year: 2017 },
+      { label: 'OECD Employment Outlook — Flexicurity and Labour Market Performance', year: 2023 },
+    ],
+    tags: ['flexicurity', 'labour market', 'unemployment', 'training', 'nordic model'],
+  },
+  {
+    id: 'EDU-DK-001',
+    country: 'Denmark',
+    countryFlag: '🇩🇰',
+    domain: 'education',
+    title: 'Universal student grant SU — €900/month for all, no means-testing',
+    titleFr: 'Bourse étudiante universelle SU — 900 €/mois pour tous, sans conditions de ressources',
+    summary: 'Provide every student in public higher education with a €900/month non-repayable grant, unconditional on parental income, funded by a 0.8% employer contribution on graduate salaries.',
+    content: `The Danish **Statens Uddannelsesstøtte (SU)** is the world's most generous student grant system. It pays ~€900/month to all students regardless of their family's income.
+
+**Key features:**
+- Amount: ~€900/month (non-repayable)
+- Conditions: none on parental income — based solely on the student's own earnings
+- Duration: full study programme + 6 months
+- Coverage: available to all students; those earning above a threshold receive a reduced amount
+
+**Why unconditional?** The SU treats the student as an independent adult, not a family dependent. This eliminates:
+- Non-take-up (zero means-testing forms to complete)
+- Social stigma (everyone receives the same)
+- Family pressure on study choice (students can choose any field regardless of income prospects)
+
+**Results in Denmark:**
+- Higher education completion rate: 50% (vs. 45% France, 40% OECD average)
+- Income gap in graduation: smallest in Europe (OECD 2025)
+- Students working >15h/week: 12% (vs. 27% in France — reduces academic outcomes)
+
+**Cost:** ~€25B/year gross for 3 million students × €900/month × 9 months, offset by abolishing existing means-tested grants and APL + €10B employer contribution.`,
+    status: 'draft',
+    author: 'community',
+    date: '2026-05-13',
+    impactStatement: '~1.6 million students in France would receive equal support. Eliminates €0 grant non-take-up (currently ~30% of eligible students in France).',
+    populationAffected: '~1.6 million students (all public higher education)',
+    estimatedCost: 'Net ~€10B/year after abolishing existing fragmented grants and employer contribution.',
+    sources: [
+      { label: 'OECD Education at a Glance 2025 — Student support and financing', year: 2025 },
+      { label: 'NBER w20847 — Effects of School Spending on Economic Outcomes (Jackson et al.)', year: 2016 },
+      { label: 'NBER w25479 — Measuring Opportunity in US Higher Education (Chetty et al.)', year: 2020 },
+    ],
+    tags: ['student grants', 'higher education', 'universal', 'nordic model', 'access'],
+  },
+  {
+    id: 'SOC-DK-001',
+    country: 'Denmark',
+    countryFlag: '🇩🇰',
+    domain: 'social',
+    title: '37-hour working week — legal norm with full productivity',
+    titleFr: 'Semaine de 37 heures — norme légale nationale avec pleine productivité',
+    summary: 'Enshrine a 37-hour working week as the legal standard, with full wage maintenance, building on the Danish model that has combined high productivity and workplace wellbeing since 1990.',
+    content: `Since 1990, Denmark's standard working week has been **37 hours** — set by national collective agreement and enshrined in law in 1991. It is not a pilot — it is the reality of Danish work life for 35 years.
+
+**Outcomes compared:**
+
+| Indicator | Denmark (37h) | France (35h legal, ~39h actual) | OECD avg |
+|-----------|--------------|--------------------------------|---------|
+| Hours worked/year | 1,570 | 1,610 | 1,716 |
+| Productivity/hour | $74 | $67 | $58 |
+| Job satisfaction | 82% | 63% | 68% |
+| Absenteeism | 5.6 days/year | 11.4 days/year | 9.2 days/year |
+
+Denmark works **less** and produces **more per hour**. The mechanism: shorter weeks reduce fatigue, improve concentration, reduce presenteeism (working without producing), and dramatically cut absenteeism.
+
+**Evidence from shorter-week experiments:**
+- Iceland national trial (2015–2019, 2,500 workers): turnover −57%, productivity stable or up in 85% of organisations
+- Microsoft Japan 4-day week: productivity +40%, electricity use −23%
+- Lepinteur (IZA 2020): 35-hour introduction in France and Germany — wellbeing increased significantly for workers, no measurable productivity loss
+
+**The Danish difference from the French 35h:**
+The Danish 37h works because it was negotiated (not imposed), accompanied by management reform (objectives, not clock-in), and phased in over 5 years.`,
+    status: 'draft',
+    author: 'community',
+    date: '2026-05-13',
+    impactStatement: 'Absenteeism −3 days/year/worker → ~€30B/year savings. Job satisfaction +15 pp. Fertility effect: +0.1–0.2 children per woman.',
+    populationAffected: 'All full-time workers (~20 million in France)',
+    estimatedCost: 'Sector-specific transition costs. Offset by absenteeism reduction ~€30B/year and better mental health outcomes.',
+    sources: [
+      { label: 'Eurofound — Working Conditions in Europe (2023)', year: 2023 },
+      { label: 'IZA DP 13985 — The Effects of Reducing Standard Working Hours (Lepinteur, 2020)', year: 2020 },
+      { label: 'OECD Employment Outlook — Working time and work-life balance', year: 2024 },
+    ],
+    tags: ['working time', 'productivity', 'wellbeing', 'nordic model', '4-day week'],
+  },
+
   // ── Governance ────────────────────────────────────────────────────────────
   {
     id: 'GOV-GLOBAL-002',

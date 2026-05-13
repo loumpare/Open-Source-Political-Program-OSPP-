@@ -2,6 +2,14 @@
 
 Proposals are organized as `{country_code}/{domain}/`. To add or modify one, see [CONTRIBUTING.md](../CONTRIBUTING.md).
 
+## Classification logic
+
+A proposal belongs to a country if it references **specific national institutions** (laws, social systems, national data). Otherwise → global.
+- 🇫🇷 France: SMIC, Assurance Maladie, ISF, INSEE, COR…
+- 🇺🇸 US: federal minimum wage, Medicare, Head Start, BLS…
+- 🇩🇰 Denmark: Flexicurity, SU grants, 37h working week, Dagpenge…
+- 🌐 Global: no country-specific institution referenced
+
 ## Structure
 
 ```
@@ -20,10 +28,14 @@ propositions/
 │   ├── environment/
 │   ├── education/
 │   └── health/
+├── dk/              Denmark (Nordic model)
+│   ├── economie/
+│   ├── education/
+│   └── social/
 └── {cc}/            Any country (ISO 3166-1 alpha-2)
 ```
 
-## Current proposals (18)
+## Current proposals (21)
 
 ### 🇫🇷 France
 
@@ -50,6 +62,14 @@ propositions/
 | ENV-US-001 | environment | Federal carbon price and dividend — $65/ton rising to $200 | draft |
 | SOC-US-001 | social | Federal paid family and medical leave — 12 weeks at 90% | draft |
 | HLT-US-001 | health | Medicare expansion — universal coverage for under-65s | draft |
+
+### 🇩🇰 Denmark (Nordic model)
+
+| ID | Domain | Title | Status |
+|----|--------|-------|--------|
+| ECO-DK-001 | economie | Flexicurité — le triangle d'or : flexibilité + sécurité + formation | draft |
+| EDU-DK-001 | education | Bourses étudiantes universelles SU — 900 €/mois, sans conditions de ressources | draft |
+| SOC-DK-001 | social | Semaine de 37 heures — norme légale nationale avec pleine productivité | draft |
 
 ### 🌐 Global
 
