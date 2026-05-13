@@ -1,4 +1,5 @@
 import { useState, useEffect, useCallback } from 'react'
+import { API_BASE } from '../config'
 
 type Vote = 1 | -1 | 0
 
@@ -11,7 +12,7 @@ interface VoteState {
   loading:    boolean
 }
 
-const API = 'http://127.0.0.1:8001'
+const API = API_BASE
 const TOKEN_KEY = 'ospp_voter_token'
 
 function getToken(): string {

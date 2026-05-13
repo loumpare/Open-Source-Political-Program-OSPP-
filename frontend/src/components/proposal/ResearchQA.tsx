@@ -1,8 +1,9 @@
 import { useState, useRef, useEffect } from 'react'
 import { Send, BookOpen, Loader2, AlertCircle, ChevronDown, ChevronUp, FlaskConical } from 'lucide-react'
 import { Proposal, DOMAIN_META } from '../../data/proposals'
+import { API_BASE } from '../../config'
 
-const RAG_URL = 'http://127.0.0.1:8001/ask'
+const RAG_URL = `${API_BASE}/ask`
 
 interface Source {
   rank: number

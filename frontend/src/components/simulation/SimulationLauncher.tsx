@@ -1,5 +1,6 @@
 import { useState } from 'react'
 import { PROPOSALS } from '../../data/proposals'
+import { API_BASE } from '../../config'
 
 const COUNTRY_CODES: Record<string, string> = {
   France: 'fr', 'United States': 'us', Denmark: 'dk', Germany: 'de',
@@ -33,7 +34,7 @@ export default function SimulationLauncher({ onResults, onLoading }: Props) {
   async function launch() {
     setRunning(true); setError(''); onLoading(true)
     try {
-      const res = await fetch('http://127.0.0.1:8001/simulate', {
+      const res = await fetch(`${API_BASE}/simulate`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({

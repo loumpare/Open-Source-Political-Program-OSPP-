@@ -1,7 +1,8 @@
 import { useState, useEffect, useRef } from 'react'
 import TimelineChart from './TimelineChart'
 
-const API = 'http://127.0.0.1:8001'
+import { API_BASE } from '../../config'
+const API = API_BASE
 
 /* ── Types ─────────────────────────────────────────────────────────────────── */
 

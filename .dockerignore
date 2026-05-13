@@ -1,0 +1,29 @@
+# Python
+.venv/
+__pycache__/
+*.pyc
+*.pyo
+*.egg-info/
+
+# Node
+frontend/node_modules/
+frontend/dist/
+frontend/dev-dist/
+
+# Dev files
+.env
+.env.local
+*.log
+/tmp/
+
+# Git
+.git/
+.gitignore
+
+# Docs / non-essentials
+docs/
+TUTORIAL.md
+CONTRIBUTING.md
+
+# SQLite (monté en volume)
+research/votes.db

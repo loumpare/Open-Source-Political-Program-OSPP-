@@ -1,0 +1,20 @@
+# OSPP Research API + Simulation
+# Generated from working environment — pin versions for reproducibility
+
+fastapi==0.136.1
+uvicorn==0.46.0
+pydantic==2.13.4
+python-dotenv==1.1.0
+requests==2.34.0
+
+# Vector DB + embeddings
+chromadb==1.5.9
+sentence-transformers==5.5.0
+# sentence-transformers pulls torch; set TORCH_INDEX for CPU-only:
+# pip install -r requirements.txt --extra-index-url https://download.pytorch.org/whl/cpu
+
+# Simulation engine
+mesa==3.0.3
+numpy==2.2.6
+pandas==2.3.3
+scipy==1.15.3
