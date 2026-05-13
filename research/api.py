@@ -16,9 +16,13 @@ import hashlib
 import json
 import os
 import sqlite3
+import sys
 from contextlib import contextmanager
 from pathlib import Path
 from typing import AsyncIterator
+
+# Ensure project root is on the path so `simulation` package is importable
+sys.path.insert(0, str(Path(__file__).parent.parent))
 
 import chromadb
 import requests
@@ -436,6 +440,41 @@ def votes_all():
             "SELECT proposal_id FROM seed_votes"
         ).fetchall()
     return {r["proposal_id"]: get_counts(r["proposal_id"]) for r in rows}
+
+
+# ── Simulation endpoint ──────────────────────────────────────────────────────
+
+class SimulateRequest(BaseModel):
+    proposal_id:    str
+    title:          str
+    country:        str = "fr"
+    domain:         str = "economy"
+    body:           str = ""    # markdown body for LLM param extraction
+    n_agents:       int = 5_000
+    seed:           int = 42
+
+
+@app.post("/simulate")
+def simulate(req: SimulateRequest):
+    """Run an ABM policy simulation and return time-series results."""
+    if req.n_agents < 100:
+        raise HTTPException(400, "n_agents must be ≥ 100")
+    if req.n_agents > 50_000:
+        raise HTTPException(400, "n_agents must be ≤ 50 000")
+
+    try:
+        from simulation.policy_parser import parse_proposal_dict
+        from simulation.model import run_simulation
+
+        policy = parse_proposal_dict(
+            req.proposal_id, req.title,
+            req.country, req.domain, req.body,
+        )
+        results = run_simulation(policy, n_agents=req.n_agents, seed=req.seed)
+        return results
+
+    except Exception as exc:
+        raise HTTPException(500, str(exc)) from exc
 
 
 # ── Entry point ───────────────────────────────────────────────────────────────

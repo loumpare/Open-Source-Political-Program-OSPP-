@@ -1,90 +1,131 @@
+"""Economic CitizenAgent for Mesa 3 policy simulation."""
+from __future__ import annotations
+
 from mesa import Agent
-import random
 
-# Demographic profiles per country, calibrated on official statistics
-COUNTRY_PROFILES = {
-    "fr": {
-        "regions": ["Île-de-France", "Auvergne-Rhône-Alpes", "PACA", "Occitanie", "Hauts-de-France", "Grand Est", "Bretagne"],
-        "csps": {
-            "names": ["Agriculteur", "Artisan/Commerçant", "Cadre", "Prof. intermédiaire", "Employé", "Ouvrier", "Retraité", "Sans emploi"],
-            "weights": [3, 6, 16, 25, 27, 12, 26, 10],
-        },
-        "education": ["Aucun diplôme", "Brevet", "CAP/BEP", "Bac", "Bac+2", "Bac+3/4", "Bac+5+"],
-        "political_std": 0.35,
-    },
-    "us": {
-        "regions": ["Northeast", "Midwest", "South", "West", "Southwest"],
-        "csps": {
-            "names": ["Agriculture", "Blue-collar", "White-collar", "Service", "Professional", "Retired", "Unemployed"],
-            "weights": [2, 20, 28, 22, 15, 18, 8],
-        },
-        "education": ["No diploma", "High school", "Some college", "Associate", "Bachelor", "Graduate"],
-        "political_std": 0.42,
-    },
-    "de": {
-        "regions": ["Bayern", "NRW", "Baden-Württemberg", "Berlin", "Sachsen", "Hamburg"],
-        "csps": {
-            "names": ["Landwirtschaft", "Facharbeiter", "Angestellter", "Beamter", "Selbständig", "Rentner", "Arbeitslos"],
-            "weights": [2, 22, 30, 10, 10, 22, 7],
-        },
-        "education": ["Kein Abschluss", "Hauptschule", "Realschule", "Abitur", "Ausbildung", "Studium"],
-        "political_std": 0.33,
-    },
-    "global": {
-        "regions": ["North America", "Europe", "Asia-Pacific", "Latin America", "Africa", "Middle East"],
-        "csps": {
-            "names": ["Agriculture", "Industry", "Services", "Professional", "Retired", "Unemployed"],
-            "weights": [15, 20, 30, 18, 12, 8],
-        },
-        "education": ["None", "Primary", "Secondary", "Vocational", "University"],
-        "political_std": 0.38,
-    },
-}
-
-AGE_GROUPS = [(18, 34, 0.22), (35, 49, 0.24), (50, 64, 0.26), (65, 90, 0.28)]
-
-
-def _sample_age() -> int:
-    r = random.random()
-    cumulative = 0.0
-    for low, high, prob in AGE_GROUPS:
-        cumulative += prob
-        if r <= cumulative:
-            return random.randint(low, high)
-    return random.randint(65, 90)
+from simulation.demographics import (
+    CountryProfile,
+    sample_age,
+    sample_income,
+    sample_sector,
+)
+from simulation.policy_parser import PolicyParams
 
 
 class CitizenAgent(Agent):
-    """A citizen agent with demographic attributes calibrated to a specific country."""
+    """A citizen with demographics + economic state that responds to policy."""
 
-    def __init__(self, unique_id: int, model, proposition: dict = None):
-        super().__init__(unique_id, model)
-        country = (proposition or {}).get("country", "global")
-        profile = COUNTRY_PROFILES.get(country, COUNTRY_PROFILES["global"])
+    def __init__(
+        self,
+        model,
+        profile: CountryProfile,
+        policy: PolicyParams | None = None,
+        with_policy: bool = True,
+    ):
+        super().__init__(model)
+        rng = model.rng_instance
 
-        self.country = country
-        self.age = _sample_age()
-        self.region = random.choice(profile["regions"])
-        self.csp = random.choices(profile["csps"]["names"], weights=profile["csps"]["weights"])[0]
-        self.education = random.choice(profile["education"])
-        self.political_position = max(-1.0, min(1.0, random.gauss(0, profile["political_std"])))
-        self.proposition = proposition or {}
-        self.vote = 0
+        # Demographics
+        self.country = profile.code
+        self.age = sample_age(profile, rng)
+        self.sector = sample_sector(profile, rng)
+        self.decile, self.income = sample_income(profile, rng)
 
-    def step(self):
-        if self.vote == 0:
-            self.vote = self._decide()
+        # Employment: adjusted by age curve
+        base_emp = profile.employment_rate
+        if self.age < 25:
+            base_emp *= 0.70
+        elif self.age > 60:
+            base_emp *= 0.60
+        self.employed = rng.random() < base_emp
 
-    def _decide(self) -> int:
-        threshold = 0.1 - self.political_position * 0.3
-        return 1 if random.random() > 0.5 + threshold else -1
+        # Wellbeing 0–1, political position −1 to +1
+        self.wellbeing = self._initial_wellbeing()
+        self.political_position = max(-1.0, min(1.0,
+            rng.gauss(0, profile.political_std)
+        ))
 
-    def profile(self) -> dict:
+        # Economic dynamics
+        noise = rng.gauss(0, 0.02)
+        self.savings_rate = max(0.02, min(
+            0.30, 0.04 + self.decile * 0.025 + noise
+        ))
+        self.consumption = self.income * (1 - self.savings_rate)
+
+        # Policy state
+        self.policy = policy
+        self.with_policy = with_policy
+        self.policy_applied = False
+
+    def _initial_wellbeing(self) -> float:
+        inc_score = min(1.0, self.decile / 9)
+        emp_score = 0.85 if self.employed else 0.30
+        return round(0.6 * inc_score + 0.4 * emp_score, 3)
+
+    def _is_targeted(self) -> bool:
+        if self.policy is None or not self.with_policy:
+            return False
+        p = self.policy
+        if self.decile not in p.target_income_deciles:
+            return False
+        if not (p.target_age_min <= self.age <= p.target_age_max):
+            return False
+        if p.target_sectors and self.sector not in p.target_sectors:
+            return False
+        return True
+
+    def _apply_policy(self) -> None:
+        """Apply the one-time policy shock to this agent if targeted."""
+        if self.policy is None or self.policy_applied:
+            return
+        self.policy_applied = True
+        if not self._is_targeted():
+            return
+
+        p = self.policy
+        rng = self.model.rng_instance
+
+        self.income = self.income * p.income_multiplier + p.monthly_transfer
+
+        if p.employment_delta > 0 and not self.employed:
+            if rng.random() < p.employment_delta * 5:
+                self.employed = True
+        elif p.employment_delta < 0 and self.employed:
+            if rng.random() < abs(p.employment_delta) * 3:
+                self.employed = False
+
+        self.wellbeing = min(1.0, self.wellbeing + p.wellbeing_delta)
+
+    def step(self) -> None:
+        """Advance agent by one year: apply policy shock then economic drift."""
+        rng = self.model.rng_instance
+
+        if not self.policy_applied:
+            self._apply_policy()
+
+        if self.employed:
+            drift = rng.gauss(0.002, 0.015)
+            self.income = max(100, self.income * (1 + drift))
+        else:
+            self.income = max(50, self.income * rng.uniform(0.23, 0.28))
+
+        target = self._initial_wellbeing() + (0.1 if self.employed else 0)
+        self.wellbeing = round(
+            self.wellbeing + 0.05 * (target - self.wellbeing)
+            + rng.gauss(0, 0.01),
+            3,
+        )
+        self.wellbeing = max(0.0, min(1.0, self.wellbeing))
+        self.consumption = self.income * (1 - self.savings_rate)
+
+    def snapshot(self) -> dict:
+        """Return a serialisable snapshot of the agent state."""
         return {
-            "country": self.country,
             "age": self.age,
-            "region": self.region,
-            "csp": self.csp,
-            "education": self.education,
-            "political_position": round(self.political_position, 2),
+            "decile": self.decile,
+            "sector": self.sector,
+            "income": round(self.income, 2),
+            "employed": self.employed,
+            "wellbeing": self.wellbeing,
+            "political_position": round(self.political_position, 3),
         }

@@ -5,6 +5,7 @@ import { Menu, X, Globe } from 'lucide-react'
 const NAV = [
   { label: 'Home', to: '/' },
   { label: 'Proposals', to: '/proposals' },
+  { label: 'Simulation', to: '/simulations' },
 ]
 
 export default function Navbar() {

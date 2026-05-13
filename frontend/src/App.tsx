@@ -6,6 +6,7 @@ import UpdatePrompt from './components/pwa/UpdatePrompt'
 import Home from './pages/Home'
 import Proposals from './pages/Proposals'
 import ProposalDetail from './pages/ProposalDetail'
+import Simulations from './pages/Simulations'
 
 export default function App() {
   return (
@@ -17,6 +18,7 @@ export default function App() {
           <Route path="/" element={<Home />} />
           <Route path="/proposals" element={<Proposals />} />
           <Route path="/proposals/:id" element={<ProposalDetail />} />
+          <Route path="/simulations" element={<Simulations />} />
         </Routes>
       </main>
       <Footer />
