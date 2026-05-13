@@ -23,6 +23,57 @@ Tracks every search session: what was asked, when, why, and what was found.
 
 ---
 
+### [HEALTH] — Session 5 — 2026-05-13
+
+**Objective:** Systematic scan of health sciences literature (2016–2026). Focus: universal health coverage (UHC), comparative health systems, single-payer models, mental health burden, pharmaceutical pricing, health inequalities, preventive care and primary care access. Goal: ground health proposals in evidence for France, the US, and global governance.
+
+**Queries run:**
+1. Universal health coverage index — WHO, Lancet GBD, World Bank
+2. Healthcare systems international comparison — Commonwealth Fund, JAMA, Health Affairs
+3. Single-payer / Medicare for All — NBER, The Lancet, JAMA
+4. Mental health global burden — The Lancet, WHO, JAMA Psychiatry
+5. Mental health cost Europe — European Neuropsychopharmacology, PLOS ONE
+6. Pharmaceutical pricing, R&D costs — BMJ, JAMA, RAND, NBER
+7. Health inequalities & social determinants — JAMA, Lancet, Marmot Commission
+8. Preventive care ROI — NEJM, NBER, J Epidemiol Community Health
+9. Primary care & dental access — The Lancet, BMJ, BMC Health Services
+
+**Sub-domains covered:** UHC · healthcare systems (comparative) · single-payer models · mental health · pharmaceutical pricing · health inequalities · social determinants · preventive care · primary care · dental access
+
+**Key sources tapped:**
+- The Lancet / Lancet Global Health / Lancet Psychiatry — dominant outlet for global health research
+- JAMA / JAMA Psychiatry / JAMA Internal Medicine — US clinical and health policy
+- NEJM — landmark US clinical studies
+- WHO — UHC monitoring, World Mental Health Report
+- Commonwealth Fund — Mirror Mirror international system comparisons
+- NBER — health insurance coverage effects, pharmaceutical economics
+- BMJ — pharmaceutical industry pricing criticism
+- RAND Corporation — international drug price comparisons
+- UCL / Marmot Commission — social determinants of health
+- BMC Health Services / Health Affairs — primary care, systems research
+
+**Results summary:**
+- UHC: UHC index stalled — annual improvement slowed from 1.5% to 0.5% post-2015 (WHO/World Bank 2023). 4.5 billion people lack full access to essential health services.
+- Comparative systems: US spends $11,000+/capita vs $4,500–6,000 in peer countries for worse outcomes on 10/11 metrics (Commonwealth Fund 2021). Administrative overhead accounts for ~$800B/yr excess cost in US.
+- Single-payer: Medicare for All estimated to save $450B/year (Himmelstein et al., Lancet 2020) via administrative simplification and drug price negotiation. 68,000 deaths per year attributable to lack of coverage (Harvard study).
+- Mental health: Mental disorders account for 32% of years lived with disability globally. Only 30–40% of those with serious mental illness receive any treatment in high-income countries (Thornicroft, Lancet 2022). Economic cost in Europe: €798B/year (4% EU GDP), with €236B in direct treatment costs.
+- Pharmaceutical: US drug prices are 2.78× higher than comparable OECD nations (RAND 2021). Industry net income margins average 13.8% — higher than any other sector (Anderson, BMJ 2019). R&D costs for a new drug: median $985M (not $2.6B industry figure — Wouters, JAMA 2020).
+- Health inequalities: US bottom income quartile lives 14.6 years less than top quartile (Chetty et al., JAMA 2016). Social determinants (housing, education, income) account for 30–55% of health outcomes.
+- Preventive care: every $1 invested in public health yields $14.3 in economic returns (Masters et al., JECH 2017). Preventable disease costs US $730B/year (Dieleman, PLOS Med 2021).
+- Primary care: Countries with stronger primary care systems have better population health and lower costs (Kringos et al., BMC 2013). Only 55% of adults in the US receive recommended preventive care (McGlynn, NEJM).
+
+**Catalog entries added:** 54 documents
+**Estimated volume:** ~90 MB
+**Google Drive path:** `OSPP/research/health/pdfs/`
+**Catalog file:** `research/health/CATALOG.md`
+**Status:** complete — ready for download phase
+
+**Next steps:**
+- [ ] Download health PDFs to Google Drive
+- [ ] Run embedding pipeline on downloaded PDFs (ChromaDB)
+
+---
+
 ### [ECONOMY] — Session 1 — 2026-05-07
 
 **Objective:** First systematic scan of economics scientific literature (2016–2026) to build the OSPP knowledge base for the economy domain. Goal: identify all major peer-reviewed papers and institutional reports covering the key sub-domains needed to ground political proposals in evidence.
