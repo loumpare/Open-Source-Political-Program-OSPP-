@@ -4,6 +4,7 @@ import { motion } from 'framer-motion'
 import { PROPOSALS, DOMAIN_META, STATUS_META } from '../data/proposals'
 import VoteWidget from '../components/proposal/VoteWidget'
 import EvidencePanel from '../components/proposal/EvidencePanel'
+import ResearchQA from '../components/proposal/ResearchQA'
 
 export default function ProposalDetail() {
   const { id } = useParams<{ id: string }>()
@@ -133,6 +134,7 @@ export default function ProposalDetail() {
             className="space-y-5"
           >
             <VoteWidget proposalId={proposal.id} />
+            <ResearchQA proposal={proposal} />
             <EvidencePanel proposal={proposal} />
 
             {/* Impact statement */}
