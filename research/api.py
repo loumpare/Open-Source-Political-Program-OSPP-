@@ -1,7 +1,7 @@
 """
-OSPP Research API — RAG server (port 8001)
-==========================================
-Uses Ollama local models + ChromaDB. No API key required.
+OSPP Research API — RAG + Votes server (port 8001)
+===================================================
+Uses Ollama local models + ChromaDB + SQLite. No Docker required.
 
 Start:
     source .venv/bin/activate
@@ -12,9 +12,11 @@ Ollama must be running: ollama serve
 """
 
 import asyncio
+import hashlib
 import json
 import os
-import sys
+import sqlite3
+from contextlib import contextmanager
 from pathlib import Path
 from typing import AsyncIterator
 
@@ -37,6 +39,8 @@ load_dotenv(ROOT / ".env")
 OLLAMA_URL   = os.getenv("OLLAMA_URL",   "http://localhost:11434")
 OLLAMA_MODEL = os.getenv("OLLAMA_MODEL", "qwen2.5:7b")
 
+DB_PATH = ROOT / "research" / "votes.db"
+
 DOMAIN_MAP = {
     "economy":     "economy",
     "education":   "education",
@@ -46,9 +50,104 @@ DOMAIN_MAP = {
     "governance":  None,   # fallback → multi-domain search
 }
 
+# ── SQLite votes DB ──────────────────────────────────────────────────────────
+
+def _init_db() -> None:
+    with sqlite3.connect(DB_PATH) as conn:
+        conn.execute("""
+            CREATE TABLE IF NOT EXISTS votes (
+                proposal_id TEXT NOT NULL,
+                voter_hash  TEXT NOT NULL,
+                value       INTEGER NOT NULL CHECK(value IN (1, -1)),
+                ts          INTEGER DEFAULT (strftime('%s','now')),
+                PRIMARY KEY (proposal_id, voter_hash)
+            )
+        """)
+        conn.execute("""
+            CREATE TABLE IF NOT EXISTS seed_votes (
+                proposal_id TEXT PRIMARY KEY,
+                support     INTEGER NOT NULL DEFAULT 0,
+                oppose      INTEGER NOT NULL DEFAULT 0
+            )
+        """)
+        # Seed realistic starting counts
+        seeds = [
+            ("ECO-FR-001",     847,  203),
+            ("SOC-FR-001",     612,  318),
+            ("ENV-FR-001",     934,  142),
+            ("EDU-FR-001",     721,   89),
+            ("ECO-US-001",    1204,  387),
+            ("GOV-GLOBAL-001", 502,   61),
+            ("ECO-DK-001",     388,   72),
+            ("EDU-DK-001",     291,   44),
+            ("SOC-DK-001",     443,  118),
+            ("ECO-DE-001",     519,  143),
+            ("ENV-DE-001",     612,  201),
+            ("SOC-SE-001",     734,   88),
+            ("ECO-NO-001",     289,   41),
+            ("ENV-NO-001",     821,  134),
+            ("EDU-FI-001",     677,   92),
+            ("ECO-FI-001",     534,  287),
+            ("SOC-FI-001",     498,   33),
+            ("HLT-CA-001",     891,  102),
+            ("ECO-CA-001",     643,  228),
+            ("HLT-GB-001",     1102, 344),
+            ("SOC-GB-001",     788,  267),
+        ]
+        conn.executemany(
+            "INSERT OR IGNORE INTO seed_votes VALUES (?,?,?)", seeds
+        )
+
+
+@contextmanager
+def _db():
+    conn = sqlite3.connect(DB_PATH)
+    conn.row_factory = sqlite3.Row
+    try:
+        yield conn
+        conn.commit()
+    finally:
+        conn.close()
+
+
+def _voter_hash(proposal_id: str, raw_token: str) -> str:
+    """One-way hash: (proposal_id, raw_token) → stored ID. Token never persisted."""
+    return hashlib.sha256(
+        f"{proposal_id}:{raw_token}".encode()
+    ).hexdigest()
+
+
+def get_counts(proposal_id: str) -> dict:
+    with _db() as conn:
+        seed = conn.execute(
+            "SELECT support, oppose FROM seed_votes WHERE proposal_id=?",
+            (proposal_id,)
+        ).fetchone()
+        s0 = seed["support"] if seed else 0
+        o0 = seed["oppose"]  if seed else 0
+
+        row = conn.execute("""
+            SELECT
+                COALESCE(SUM(CASE WHEN value=1  THEN 1 ELSE 0 END), 0) AS s,
+                COALESCE(SUM(CASE WHEN value=-1 THEN 1 ELSE 0 END), 0) AS o
+            FROM votes WHERE proposal_id=?
+        """, (proposal_id,)).fetchone()
+
+    support = s0 + row["s"]
+    oppose  = o0 + row["o"]
+    total   = support + oppose
+    return {
+        "proposal_id": proposal_id,
+        "support": support,
+        "oppose":  oppose,
+        "total":   total,
+        "support_pct": round(support / total * 100) if total else 50,
+    }
+
+
 # ── App ───────────────────────────────────────────────────────────────────────
 
-app = FastAPI(title="OSPP Research API", version="2.0.0")
+app = FastAPI(title="OSPP Research API", version="3.0.0")
 
 app.add_middleware(
     CORSMiddleware,
@@ -57,9 +156,14 @@ app.add_middleware(
         "http://localhost:4173",
         "http://127.0.0.1:3000",
     ],
-    allow_methods=["POST", "GET", "OPTIONS"],
+    allow_methods=["POST", "GET", "DELETE", "OPTIONS"],
     allow_headers=["*"],
 )
+
+
+@app.on_event("startup")
+def startup():
+    _init_db()
 
 # ── Lazy singletons ───────────────────────────────────────────────────────────
 
@@ -282,6 +386,56 @@ async def ask(req: AskRequest):
         media_type="text/event-stream",
         headers={"Cache-Control": "no-cache", "X-Accel-Buffering": "no"},
     )
+
+
+# ── Vote endpoints ───────────────────────────────────────────────────────────
+
+class VoteRequest(BaseModel):
+    voter_token: str   # raw token from browser — never stored as-is
+    value: int         # 1 = support, -1 = oppose, 0 = remove
+
+
+@app.get("/votes/{proposal_id}")
+def vote_get(proposal_id: str):
+    return get_counts(proposal_id)
+
+
+@app.post("/votes/{proposal_id}")
+def vote_post(proposal_id: str, req: VoteRequest):
+    if req.value not in (1, -1, 0):
+        raise HTTPException(400, "value must be 1, -1, or 0")
+    if not req.voter_token:
+        raise HTTPException(400, "voter_token required")
+
+    vh = _voter_hash(proposal_id, req.voter_token)
+
+    with _db() as conn:
+        if req.value == 0:
+            conn.execute(
+                "DELETE FROM votes WHERE proposal_id=? AND voter_hash=?",
+                (proposal_id, vh),
+            )
+        else:
+            conn.execute(
+                """INSERT INTO votes (proposal_id, voter_hash, value)
+                   VALUES (?, ?, ?)
+                   ON CONFLICT(proposal_id, voter_hash)
+                   DO UPDATE SET value=excluded.value,
+                                 ts=strftime('%s','now')""",
+                (proposal_id, vh, req.value),
+            )
+
+    return get_counts(proposal_id)
+
+
+@app.get("/votes")
+def votes_all():
+    """Return counts for every proposal that has at least one seed."""
+    with _db() as conn:
+        rows = conn.execute(
+            "SELECT proposal_id FROM seed_votes"
+        ).fetchall()
+    return {r["proposal_id"]: get_counts(r["proposal_id"]) for r in rows}
 
 
 # ── Entry point ───────────────────────────────────────────────────────────────
