@@ -16,6 +16,7 @@ import base64
 import hashlib
 import json
 import os
+import re
 import sqlite3
 import sys
 import time
@@ -497,12 +498,19 @@ class VoteRequest(BaseModel):
 
 @app.get("/votes/{proposal_id}")
 def vote_get(proposal_id: str):
+    if not _PROPOSAL_ID_RE.match(proposal_id):
+        raise HTTPException(400, "Invalid proposal_id format")
     return get_counts(proposal_id)
+
+
+_PROPOSAL_ID_RE = re.compile(r"^[A-Z]{2,5}-[A-Z0-9]{2,10}-\d{3}$")
 
 
 @app.post("/votes/{proposal_id}")
 @limiter.limit("30/minute")
 def vote_post(request: Request, proposal_id: str, req: VoteRequest):
+    if not _PROPOSAL_ID_RE.match(proposal_id):
+        raise HTTPException(400, "Invalid proposal_id format")
     if req.value not in (1, -1, 0):
         raise HTTPException(400, "value must be 1, -1, or 0")
 

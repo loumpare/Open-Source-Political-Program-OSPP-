@@ -48,6 +48,7 @@ services:
     environment:
       - OLLAMA_URL=http://ollama:11434
       - OLLAMA_MODEL=${OLLAMA_MODEL:-qwen2.5:7b}
+      - CORS_ORIGINS=${CORS_ORIGINS:-}
     volumes:
       - ./research/vectordb:/app/research/vectordb
       - votes_db:/app/research
@@ -60,7 +61,8 @@ services:
     expose:
       - "8001"
 
-  # ── Frontend — React + nginx (proxy /api → api:8001) ─────────────────────────
+  # ── Frontend — React + nginx (SPA + proxy /api → api:8001) ───────────────────
+  # Not exposed directly — Caddy is the only public entry point.
   frontend:
     build:
       context: .
@@ -72,9 +74,32 @@ services:
     depends_on:
       api:
         condition: service_healthy
+    expose:
+      - "80"
+
+  # ── Caddy — HTTPS reverse proxy ──────────────────────────────────────────────
+  # Handles TLS automatically:
+  #   DOMAIN=ospp.example.com  → Let's Encrypt (production)
+  #   DOMAIN unset             → Caddy internal CA (localhost, self-signed)
+  caddy:
+    image: caddy:2-alpine
+    container_name: ospp_caddy
+    restart: unless-stopped
+    depends_on:
+      - frontend
     ports:
-      - "${PORT:-80}:80"
+      - "80:80"
+      - "443:443"
+      - "443:443/udp"   # HTTP/3 (QUIC)
+    volumes:
+      - ./Caddyfile:/etc/caddy/Caddyfile:ro
+      - caddy_data:/data
+      - caddy_config:/config
+    environment:
+      - DOMAIN=${DOMAIN:-localhost}
 
 volumes:
   ollama_data:
   votes_db:
+  caddy_data:
+  caddy_config:

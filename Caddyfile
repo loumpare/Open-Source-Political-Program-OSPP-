@@ -1,0 +1,40 @@
+# OSPP — Caddy reverse proxy
+# Handles HTTPS automatically:
+#   - Real domain  → Let's Encrypt certificate (free, auto-renew)
+#   - localhost    → Caddy internal CA (self-signed, for local Docker)
+#
+# Set DOMAIN in .env:
+#   DOMAIN=ospp.example.com   → production HTTPS
+#   (unset)                   → defaults to localhost
+
+{$DOMAIN:localhost} {
+
+    # ── Security headers ────────────────────────────────────────────────────
+    header {
+        X-Content-Type-Options  "nosniff"
+        X-Frame-Options         "DENY"
+        X-XSS-Protection        "1; mode=block"
+        Referrer-Policy         "strict-origin-when-cross-origin"
+        Permissions-Policy      "geolocation=(), camera=(), microphone=()"
+        Strict-Transport-Security "max-age=63072000; includeSubDomains; preload"
+        -Server
+    }
+
+    # ── All traffic → nginx (SPA + /api proxy) ──────────────────────────────
+    reverse_proxy frontend:80 {
+        # Pass real client IP to nginx
+        header_up X-Real-IP        {remote_host}
+        header_up X-Forwarded-For  {remote_host}
+        header_up X-Forwarded-Proto {scheme}
+
+        # SSE streaming: disable buffering
+        flush_interval -1
+    }
+
+    # ── Logs ────────────────────────────────────────────────────────────────
+    log {
+        output stdout
+        format console
+        level  WARN
+    }
+}
