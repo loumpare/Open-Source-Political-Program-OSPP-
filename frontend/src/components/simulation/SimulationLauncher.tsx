@@ -49,6 +49,7 @@ export default function SimulationLauncher({ onResults, onLoading, onCountryChan
     return PROPOSALS.filter(p => p.country === selectedCountry)
   }, [selectedCountry])
 
+  const hasProposals = filteredProposals.length > 0
   const selected = filteredProposals.find(p => p.id === proposalId)
     ?? filteredProposals[0]
     ?? PROPOSALS[0]
@@ -283,8 +284,14 @@ export default function SimulationLauncher({ onResults, onLoading, onCountryChan
         </div>
       )}
 
+      {!hasProposals && selectedCountry && (
+        <div className="bg-amber-50 border border-amber-200 rounded-lg px-3 py-2 text-xs text-amber-700">
+          No proposals available for {selectedCountry} yet.
+        </div>
+      )}
+
       <button
-        onClick={launch} disabled={running}
+        onClick={launch} disabled={running || !hasProposals}
         className="w-full py-3 rounded-xl bg-indigo-600 text-white font-semibold
                    hover:bg-indigo-700 active:bg-indigo-800 disabled:opacity-60
                    transition-colors flex items-center justify-center gap-2 text-sm"

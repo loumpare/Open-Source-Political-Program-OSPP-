@@ -132,11 +132,20 @@ export function useVote(proposalId: string) {
         }))
       }
     } catch (err) {
-      // If Web Crypto API is unavailable (non-HTTPS / old browser), flag it
-      const isCryptoErr = err instanceof Error &&
-        (err.name === 'NotSupportedError' || err.message.includes('subtle'))
-      if (isCryptoErr) setState(prev2 => ({ ...prev2, cryptoError: true }))
-      // Otherwise: API offline — optimistic update stays
+      const name = err instanceof Error ? err.name : ''
+      const msg  = err instanceof Error ? err.message : ''
+      // Web Crypto unavailable (non-HTTPS, old browser, or IndexedDB blocked)
+      const isCryptoErr =
+        name === 'NotSupportedError' ||
+        name === 'SecurityError' ||
+        name === 'InvalidStateError' ||
+        msg.includes('subtle') ||
+        msg.includes('IndexedDB') ||
+        msg.includes('crypto')
+      if (isCryptoErr) {
+        setState(prev2 => ({ ...prev2, cryptoError: true }))
+      }
+      // Network error or server 4xx/5xx: optimistic update stays (will sync on reload)
     }
   }, [proposalId, state])
 

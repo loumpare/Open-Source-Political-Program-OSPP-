@@ -55,10 +55,11 @@ interface SimResults {
 /* ── Delta chip ─────────────────────────────────────────────────────────────── */
 
 function DeltaChip({
-  value, unit = '', positiveGood = true, size = 'md',
+  value: rawValue, unit = '', positiveGood = true, size = 'md',
 }: {
   value: number; unit?: string; positiveGood?: boolean; size?: 'sm' | 'md' | 'lg'
 }) {
+  const value = isFinite(rawValue) ? rawValue : 0   // guard against NaN / Infinity
   const good = positiveGood ? value >= 0 : value <= 0
   const sign = value >= 0 ? '+' : ''
   const cls  = good
@@ -293,7 +294,7 @@ export default function SimulationResults({ results }: { results: SimResults }) 
                 { label: t.simulation.metric_gini,       v: summary.gini_delta,             u: '',    g: false },
                 { label: t.simulation.metric_employment, v: summary.employment_delta*100,   u: ' pp', g: true  },
                 { label: t.simulation.metric_poverty,    v: summary.poverty_delta*100,      u: ' pp', g: false },
-                { label: '💰 Wealth Gini',               v: summary.wealth_gini_delta,      u: '',    g: false },
+                { label: `💰 ${t.simulation.metric_wealth_gini}`, v: summary.wealth_gini_delta ?? 0, u: '', g: false },
               ].map(k => (
                 <div key={k.label} className="bg-slate-50 rounded-xl p-3">
                   <div className="text-xs text-slate-500 mb-0.5">{k.label}</div>
@@ -307,17 +308,14 @@ export default function SimulationResults({ results }: { results: SimResults }) 
 
             {/* Dual Gini comparison */}
             <div className="bg-amber-50 border border-amber-200 rounded-xl p-3 text-xs text-amber-800 space-y-1">
-              <p className="font-semibold">Income Gini vs Wealth Gini</p>
-              <p>Income Gini measures wage inequality. Wealth Gini measures patrimony
-                concentration — always higher (France ≈ 0.65 vs 0.29 for income).
-                Wealth taxes primarily impact wealth Gini, not income Gini.
-                Sources: Piketty (2014), Crédit Suisse Global Wealth Report 2023.</p>
+              <p className="font-semibold">{t.simulation.wealth_gini_note_title}</p>
+              <p>{t.simulation.wealth_gini_note_body}</p>
             </div>
             <TimelineChart data={mk('gini_control','gini_policy')}
-              label={`${t.simulation.metric_gini} (income)`} color="#f59e0b"
+              label={`${t.simulation.metric_gini} (revenus)`} color="#f59e0b"
               formatY={v => v.toFixed(3)} />
             <TimelineChart data={mk('wealth_gini_control','wealth_gini_policy')}
-              label="Wealth Gini (patrimony)" color="#d97706"
+              label={t.simulation.chart_wealth_gini} color="#d97706"
               formatY={v => v.toFixed(3)} />
             <TimelineChart data={mk('employment_control','employment_policy',100)}
               label={`${t.simulation.metric_employment} (%)`} color="#10b981"
@@ -454,10 +452,10 @@ export default function SimulationResults({ results }: { results: SimResults }) 
                 { label: t.simulation.metric_trust,     v: summary.trust_delta*100,              g: true  },
                 { label: t.simulation.metric_health,    v: summary.health_delta*100,             g: true  },
                 { label: t.simulation.metric_poverty,   v: summary.poverty_delta*100,            g: false },
-                { label: '💀 Mortality risk',           v: summary.mortality_delta*1000,         g: false },
-                { label: '⚧ Gender equality',           v: summary.gender_equality_delta*100,    g: true  },
-                { label: '✊ Anti-discrimination',       v: summary.discrimination_delta*100,     g: true  },
-                { label: '📈 Social mobility',           v: summary.mobility_delta*100,           g: true  },
+                { label: `💀 ${t.simulation.metric_mortality}`,         v: (summary.mortality_delta ?? 0)*1000,          g: false },
+                { label: `⚧ ${t.simulation.metric_gender_equality}`,   v: (summary.gender_equality_delta ?? 0)*100,     g: true  },
+                { label: `✊ ${t.simulation.metric_discrimination}`,    v: (summary.discrimination_delta ?? 0)*100,      g: true  },
+                { label: `📈 ${t.simulation.metric_social_mobility}`,   v: (summary.mobility_delta ?? 0)*100,            g: true  },
               ].map(k => (
                 <div key={k.label} className="bg-blue-50 rounded-xl p-3">
                   <div className="text-xs text-blue-700 mb-0.5">{k.label}</div>
@@ -472,19 +470,19 @@ export default function SimulationResults({ results }: { results: SimResults }) 
               label={`${t.simulation.metric_health} (%)`} color="#3b82f6"
               formatY={v => `${v.toFixed(1)}%`} />
             <TimelineChart data={mk('mortality_control','mortality_policy',1000)}
-              label="Mortality risk (‰/year)" color="#dc2626"
+              label={t.simulation.chart_mortality} color="#dc2626"
               formatY={v => `${v.toFixed(2)}‰`} />
             <TimelineChart data={mk('trust_control','trust_policy',100)}
               label={`${t.simulation.metric_trust} (%)`} color="#8b5cf6"
               formatY={v => `${v.toFixed(1)}%`} />
             <TimelineChart data={mk('gender_equality_control','gender_equality_policy',100)}
-              label="Gender equality index (%)" color="#ec4899"
+              label={t.simulation.chart_gender_equality} color="#ec4899"
               formatY={v => `${v.toFixed(1)}%`} />
             <TimelineChart data={mk('discrimination_control','discrimination_policy',100)}
-              label="Anti-discrimination score (%)" color="#f97316"
+              label={t.simulation.chart_discrimination} color="#f97316"
               formatY={v => `${v.toFixed(1)}%`} />
             <TimelineChart data={mk('mobility_control','mobility_policy',100)}
-              label="Social mobility index (%)" color="#14b8a6"
+              label={t.simulation.chart_social_mobility} color="#14b8a6"
               formatY={v => `${v.toFixed(1)}%`} />
             <div className="bg-slate-50 rounded-xl p-4 text-xs text-slate-600 space-y-1">
               <p className="font-medium text-slate-700">{t.simulation.sources_social_title}</p>

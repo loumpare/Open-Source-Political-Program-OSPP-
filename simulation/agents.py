@@ -127,15 +127,11 @@ class CitizenAgent(Agent):
         self.labour_income  = self.income
         self.income         = self.labour_income + self.capital_income
 
-        # ── Mortality risk ────────────────────────────────────────────────────
-        # Sources: WHO GHE 2019, Mackenbach et al. (2019) — social gradient
+        # mortality hazard factors — used below after health_score is defined
         age_h = math.exp(max(0.0, (self.age - 40) * 0.065))
         inc_h = max(0.5, 2.0 - (self.decile / 9) * 1.5)
-        hlt_h = max(0.6, 1.8 - self.health_score * 1.4)  # defined below
         acc_h = max(0.7, 1.6 - profile.healthcare_access * 0.9)
-        self.mortality_risk = round(min(0.40,
-            0.006 * age_h * inc_h * acc_h
-        ), 5)   # health_score not yet set here; refined after health init
+        self.mortality_risk = 0.0   # placeholder — set properly after health init
 
         # ── Gender equality ───────────────────────────────────────────────────
         # Sources: WEF Gender Gap Index 2023, OECD Employment Outlook 2023
@@ -228,10 +224,13 @@ class CitizenAgent(Agent):
         if p.wealth_tax_rate > 0 and self.wealth > p.wealth_tax_threshold:
             annual_tax  = (self.wealth - p.wealth_tax_threshold) * p.wealth_tax_rate
             monthly_tax = annual_tax / 12
-            # Cap: tax cannot exceed 35 % of income (avoid unrealistic collapse)
-            self.income  = max(self.income * 0.65, self.income - monthly_tax)
-            self.wealth  = max(0.0, self.wealth - annual_tax)
+            # Deduct from labour_income (capped at 35 % to avoid collapse)
+            tax_applied      = min(monthly_tax, self.labour_income * 0.35)
+            self.labour_income = max(50.0, self.labour_income - tax_applied)
+            self.wealth      = max(0.0, self.wealth - annual_tax)
+            # Recompute capital_income from reduced wealth, then rebuild income
             self.capital_income = self.wealth * 0.03 / 12
+            self.income         = self.labour_income + self.capital_income
 
         # ── Mortality effect (universal — affects all policy agents) ──────────
         if p.mortality_delta != 0:
@@ -417,17 +416,24 @@ class CitizenAgent(Agent):
     def snapshot(self) -> dict:
         """Serialisable snapshot of the agent state."""
         return {
-            "age": self.age,
-            "decile": self.decile,
-            "sector": self.sector,
-            "income": round(self.income, 2),
-            "employed": self.employed,
-            "wellbeing": self.wellbeing,
-            "carbon_footprint": round(self.carbon_footprint, 3),
-            "green_score": round(self.green_score, 3),
-            "health_score": self.health_score,
-            "education_score": self.education_score,
-            "social_trust": self.social_trust,
-            "governance_trust": self.governance_trust,
+            "age":                self.age,
+            "decile":             self.decile,
+            "sector":             self.sector,
+            "income":             round(self.income, 2),
+            "labour_income":      round(self.labour_income, 2),
+            "capital_income":     round(self.capital_income, 2),
+            "wealth":             round(self.wealth, 0),
+            "employed":           self.employed,
+            "wellbeing":          self.wellbeing,
+            "carbon_footprint":   round(self.carbon_footprint, 3),
+            "green_score":        round(self.green_score, 3),
+            "health_score":       self.health_score,
+            "mortality_risk":     self.mortality_risk,
+            "education_score":    self.education_score,
+            "social_trust":       self.social_trust,
+            "governance_trust":   self.governance_trust,
+            "gender_equality":    self.gender_equality,
+            "discrimination_score": self.discrimination_score,
+            "social_mobility":    self.social_mobility,
             "political_position": round(self.political_position, 3),
         }

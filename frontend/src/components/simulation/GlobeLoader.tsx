@@ -64,6 +64,7 @@ const NODES: [number, number][] = [
 
 export default function GlobeLoader({ message, countryFlag, countryName }: Props) {
   const canvasRef = useRef<HTMLCanvasElement>(null)
+  const rafRef    = useRef<number>(0)
 
   useEffect(() => {
     const canvas = canvasRef.current
@@ -73,7 +74,6 @@ export default function GlobeLoader({ message, countryFlag, countryName }: Props
     const cx = W / 2, cy = H / 2
     const R = 108
     let rotation = 0
-    let raf: number
 
     // Convert geographic (lon°, lat°) → sphere 3D + screen 2D
     function project(lon: number, lat: number) {
@@ -213,11 +213,11 @@ export default function GlobeLoader({ message, countryFlag, countryName }: Props
         ctx.fill()
       }
 
-      raf = requestAnimationFrame(draw)
+      rafRef.current = requestAnimationFrame(draw)
     }
 
-    raf = requestAnimationFrame(draw)
-    return () => cancelAnimationFrame(raf)
+    rafRef.current = requestAnimationFrame(draw)
+    return () => cancelAnimationFrame(rafRef.current)
   }, [])
 
   return (
