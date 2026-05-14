@@ -73,6 +73,13 @@ class EconomyModel(Model):
                 # 🏛 Gouvernance
                 "governance_control": lambda m: m._mean_attr("governance_trust", False),
                 "governance_policy":  lambda m: m._mean_attr("governance_trust", True),
+                # ⚖️ Métriques sociales avancées
+                "gender_eq_control":  lambda m: m._mean_attr("gender_equality", False),
+                "gender_eq_policy":   lambda m: m._mean_attr("gender_equality", True),
+                "discrim_control":    lambda m: m._mean_attr("discrimination_score", False),
+                "discrim_policy":     lambda m: m._mean_attr("discrimination_score", True),
+                "mobility_control":   lambda m: m._mean_attr("social_mobility", False),
+                "mobility_policy":    lambda m: m._mean_attr("social_mobility", True),
             }
         )
 
@@ -135,9 +142,7 @@ class EconomyModel(Model):
                 "gdp", "gini", "employment", "poverty",
                 "carbon", "green",
                 "wellbeing", "trust",
-                "education",
-                "health",
-                "governance",
+                "education", "health", "governance",
             ]:
                 ctrl = float(row[f"{key}_control"])
                 pol  = float(row[f"{key}_policy"])
@@ -147,6 +152,17 @@ class EconomyModel(Model):
                     s[f"{key}_delta_pct"] = _pct_delta(ctrl, pol)
                 else:
                     s[f"{key}_delta"] = round(pol - ctrl, 4)
+            # ⚖️ Social metrics (separate column prefix mapping)
+            for col, label in [
+                ("gender_eq", "gender_equality"),
+                ("discrim",   "discrimination"),
+                ("mobility",  "mobility"),
+            ]:
+                ctrl = float(row[f"{col}_control"])
+                pol  = float(row[f"{col}_policy"])
+                s[f"{label}_control"] = ctrl
+                s[f"{label}_policy"]  = pol
+                s[f"{label}_delta"]   = round(pol - ctrl, 4)
             series.append(s)
 
         last = series[-1] if series else {}
@@ -181,7 +197,11 @@ class EconomyModel(Model):
                 # 💊 Santé
                 "health_delta":       _lv("health_delta"),
                 # 🏛 Gouvernance
-                "governance_delta":   _lv("governance_delta"),
+                "governance_delta":       _lv("governance_delta"),
+                # ⚖️ Social avancé
+                "gender_equality_delta":  _lv("gender_equality_delta"),
+                "discrimination_delta":   _lv("discrimination_delta"),
+                "mobility_delta":         _lv("mobility_delta"),
                 "effect_description": (
                     self.policy.effect_description if self.policy else ""
                 ),

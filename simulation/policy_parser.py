@@ -51,6 +51,13 @@ class PolicyParams:
     education_delta: float = 0.0
     # Governance / institutional trust delta
     governance_delta: float = 0.0
+    # Gender equality delta — WEF GGI scale (0.04 = +4 pp)
+    gender_equality_delta: float = 0.0
+    # Anti-discrimination delta (positive = less discrimination)
+    # Sources: Allport (1954), Pettigrew & Tropp (2006), EU FRA reports
+    discrimination_delta: float = 0.0
+    # Intergenerational social mobility delta — Chetty/Corak scale
+    mobility_delta: float = 0.0
     # One-sentence description of expected effects (from LLM)
     effect_description: str = ""
 
@@ -185,16 +192,17 @@ def _fallback(proposal_id: str) -> dict:
             "wellbeing_delta":      0.03,
             "carbon_multiplier":    0.99,
             "education_delta":      0.02,
-            "governance_delta":     0.04,   # legitimacy boost
+            "governance_delta":     0.04,
+            "gender_equality_delta": 0.01,
+            "discrimination_delta":  0.01,
+            "mobility_delta":        0.02,
             "horizon_years":        5,
-            # IMPORTANT: target the TOP deciles (who pay), not the poor
-            "target_income_deciles": [8, 9],  # D9-D10 = proxy for high-wealth
+            "target_income_deciles": [8, 9],
             "target_age_min": 18, "target_age_max": 90,
             "effect_description": (
                 "Progressive wealth tax reduces capital income of top 10% by ~7%"
                 " and distributes ~140€/month universal dividend to all "
-                "(Saez & Zucman 2019). Note: real wealth Gini impact is 3-5× larger"
-                " but our model tracks income, not accumulated wealth."
+                "(Saez & Zucman 2019)."
             ),
         }
 
@@ -208,8 +216,11 @@ def _fallback(proposal_id: str) -> dict:
             "gini_delta": -0.012,  # OECD 2015
             "wellbeing_delta":      0.03,
             "carbon_multiplier":    1.02,   # slight rebound (Kuznets)
-            "education_delta":      0.01,   # indirect via purchasing power
-            "governance_delta":     0.01,
+            "education_delta":       0.01,
+            "governance_delta":      0.01,
+            "gender_equality_delta": 0.02,  # min-wage workers are mostly women
+            "discrimination_delta":  0.01,
+            "mobility_delta":        0.015,
             "horizon_years":        5,
             "target_income_deciles": [0, 1, 2, 3],
             "target_age_min": 18, "target_age_max": 65,
@@ -228,8 +239,11 @@ def _fallback(proposal_id: str) -> dict:
             "gini_delta": -0.025,
             "wellbeing_delta":      0.07,
             "carbon_multiplier":    1.03,   # higher consumption → slight rebound
-            "education_delta":      0.02,
-            "governance_delta":     0.02,
+            "education_delta":       0.02,
+            "governance_delta":      0.02,
+            "gender_equality_delta": 0.04,  # UBI/parental leave large gender effect
+            "discrimination_delta":  0.02,
+            "mobility_delta":        0.03,
             "horizon_years":        5,
             "target_income_deciles": list(range(10)),
             "target_age_min": 18, "target_age_max": 90,
@@ -247,8 +261,11 @@ def _fallback(proposal_id: str) -> dict:
             "gini_delta": -0.008,
             "wellbeing_delta":      0.06,
             "carbon_multiplier":    1.0,
-            "education_delta":      0.01,
-            "governance_delta":     0.03,
+            "education_delta":       0.01,
+            "governance_delta":      0.03,
+            "gender_equality_delta": 0.02,
+            "discrimination_delta":  0.01,
+            "mobility_delta":        0.01,
             "horizon_years":        8,
             "target_income_deciles": list(range(10)),
             "target_age_min": 18, "target_age_max": 90,
@@ -268,8 +285,11 @@ def _fallback(proposal_id: str) -> dict:
             "wellbeing_delta":      0.04,
             # -28% (IPCC AR6 mitigation scenario)
             "carbon_multiplier":    0.72,
-            "education_delta":      0.01,
-            "governance_delta":     0.02,
+            "education_delta":       0.01,
+            "governance_delta":      0.02,
+            "gender_equality_delta": 0.01,
+            "discrimination_delta":  0.005,
+            "mobility_delta":        0.01,
             "horizon_years":        10,
             "target_income_deciles": list(range(10)),
             "target_age_min": 18, "target_age_max": 90,
@@ -288,8 +308,11 @@ def _fallback(proposal_id: str) -> dict:
             "gini_delta": -0.012,
             "wellbeing_delta":      0.05,
             "carbon_multiplier":    0.98,
-            "education_delta":      0.08,   # direct effect (UNESCO HDI)
-            "governance_delta":     0.03,
+            "education_delta":       0.08,
+            "governance_delta":      0.03,
+            "gender_equality_delta": 0.03,  # edu reduces gender gap (UNESCO 2023)
+            "discrimination_delta":  0.04,  # Pettigrew & Tropp (2006)
+            "mobility_delta":        0.05,  # Chetty et al. (2020) — largest effect
             "horizon_years":        10,
             "target_income_deciles": [0, 1, 2, 3, 4],
             "target_age_min": 18, "target_age_max": 40,
@@ -307,8 +330,11 @@ def _fallback(proposal_id: str) -> dict:
             "gini_delta": -0.010,
             "wellbeing_delta":      0.04,
             "carbon_multiplier":    0.97,
-            "education_delta":      0.02,
-            "governance_delta":     0.08,  # direct institutional trust boost
+            "education_delta":       0.02,
+            "governance_delta":      0.08,
+            "gender_equality_delta": 0.02,
+            "discrimination_delta":  0.05,  # anti-discrimination law (EU FRA 2020)
+            "mobility_delta":        0.02,
             "horizon_years":        5,
             "target_income_deciles": list(range(10)),
             "target_age_min": 18, "target_age_max": 90,
@@ -319,15 +345,18 @@ def _fallback(proposal_id: str) -> dict:
         }
     # ── Generic fallback ─────────────────────────────────────────────────────
     return {
-        "monthly_transfer":     0,
-        "employment_delta":    0.004,
-        "income_multiplier":    1.02,
-        "gini_delta": -0.005,
-        "wellbeing_delta":      0.02,
-        "carbon_multiplier":    1.0,
-        "education_delta":      0.01,
-        "governance_delta":     0.01,
-        "horizon_years":        5,
+        "monthly_transfer":      0,
+        "employment_delta":      0.004,
+        "income_multiplier":     1.02,
+        "gini_delta":           -0.005,
+        "wellbeing_delta":       0.02,
+        "carbon_multiplier":     1.0,
+        "education_delta":       0.01,
+        "governance_delta":      0.01,
+        "gender_equality_delta": 0.005,
+        "discrimination_delta":  0.005,
+        "mobility_delta":        0.005,
+        "horizon_years":         5,
         "target_income_deciles": list(range(10)),
         "target_age_min": 18, "target_age_max": 90,
         "effect_description": "Policy expected to have moderate positive effects.",
@@ -367,6 +396,9 @@ def parse_proposal(md_path: str) -> PolicyParams:
         )),
         target_age_min=int(extracted.get("target_age_min", 18)),
         target_age_max=int(extracted.get("target_age_max", 90)),
+        gender_equality_delta=float(extracted.get("gender_equality_delta", 0)),
+        discrimination_delta=float(extracted.get("discrimination_delta", 0)),
+        mobility_delta=float(extracted.get("mobility_delta", 0)),
         effect_description=str(extracted.get("effect_description", "")),
     )
 
@@ -374,7 +406,15 @@ def parse_proposal(md_path: str) -> PolicyParams:
 def parse_proposal_dict(proposal_id: str, title: str, country: str,
                         domain: str, body: str = "") -> PolicyParams:
     """Parse from already-loaded data (no file needed — used by the API)."""
-    raw = _extract_with_llm(title, body) or _fallback(proposal_id)
+    raw = _extract_with_llm(title, body)
+    fb  = _fallback(proposal_id)
+    if not raw:
+        raw = fb
+    else:
+        # LLM doesn't know about new social metrics — fill from calibrated fallback
+        for key in ("gender_equality_delta", "discrimination_delta", "mobility_delta"):
+            if key not in raw:
+                raw[key] = fb[key]
     extracted = _postprocess(proposal_id, title, raw)
     return PolicyParams(
         proposal_id=proposal_id, title=title,
@@ -394,5 +434,8 @@ def parse_proposal_dict(proposal_id: str, title: str, country: str,
         )),
         target_age_min=int(extracted.get("target_age_min", 18)),
         target_age_max=int(extracted.get("target_age_max", 90)),
+        gender_equality_delta=float(extracted.get("gender_equality_delta", 0)),
+        discrimination_delta=float(extracted.get("discrimination_delta", 0)),
+        mobility_delta=float(extracted.get("mobility_delta", 0)),
         effect_description=str(extracted.get("effect_description", "")),
     )

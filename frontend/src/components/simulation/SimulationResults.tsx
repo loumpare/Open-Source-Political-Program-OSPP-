@@ -20,6 +20,9 @@ interface SeriesPoint {
   education_control: number; education_policy: number; education_delta: number
   health_control: number; health_policy: number; health_delta: number
   governance_control: number; governance_policy: number; governance_delta: number
+  gender_equality_control: number; gender_equality_policy: number; gender_equality_delta: number
+  discrimination_control: number; discrimination_policy: number; discrimination_delta: number
+  mobility_control: number; mobility_policy: number; mobility_delta: number
 }
 
 interface SimResults {
@@ -34,7 +37,9 @@ interface SimResults {
     wellbeing_delta: number; carbon_delta_pct: number
     green_delta: number; health_delta: number
     education_delta: number; governance_delta: number
-    trust_delta: number; effect_description: string
+    trust_delta: number
+    gender_equality_delta: number; discrimination_delta: number; mobility_delta: number
+    effect_description: string
   }
   series: SeriesPoint[]
   demographics: Record<string, {
@@ -429,10 +434,13 @@ export default function SimulationResults({ results }: { results: SimResults }) 
           {tab === 'society' && <>
             <div className="grid grid-cols-2 gap-3">
               {[
-                { label: t.simulation.metric_wellbeing, v: summary.wellbeing_delta*100, g: true  },
-                { label: t.simulation.metric_trust,     v: summary.trust_delta*100,     g: true  },
-                { label: t.simulation.metric_health,    v: summary.health_delta*100,    g: true  },
-                { label: t.simulation.metric_poverty,   v: summary.poverty_delta*100,   g: false },
+                { label: t.simulation.metric_wellbeing, v: summary.wellbeing_delta*100,          g: true  },
+                { label: t.simulation.metric_trust,     v: summary.trust_delta*100,              g: true  },
+                { label: t.simulation.metric_health,    v: summary.health_delta*100,             g: true  },
+                { label: t.simulation.metric_poverty,   v: summary.poverty_delta*100,            g: false },
+                { label: '⚧ Gender equality',           v: summary.gender_equality_delta*100,    g: true  },
+                { label: '✊ Anti-discrimination',       v: summary.discrimination_delta*100,     g: true  },
+                { label: '📈 Social mobility',           v: summary.mobility_delta*100,           g: true  },
               ].map(k => (
                 <div key={k.label} className="bg-blue-50 rounded-xl p-3">
                   <div className="text-xs text-blue-700 mb-0.5">{k.label}</div>
@@ -449,9 +457,22 @@ export default function SimulationResults({ results }: { results: SimResults }) 
             <TimelineChart data={mk('trust_control','trust_policy',100)}
               label={`${t.simulation.metric_trust} (%)`} color="#8b5cf6"
               formatY={v => `${v.toFixed(1)}%`} />
+            <TimelineChart data={mk('gender_equality_control','gender_equality_policy',100)}
+              label="Gender equality index (%)" color="#ec4899"
+              formatY={v => `${v.toFixed(1)}%`} />
+            <TimelineChart data={mk('discrimination_control','discrimination_policy',100)}
+              label="Anti-discrimination score (%)" color="#f97316"
+              formatY={v => `${v.toFixed(1)}%`} />
+            <TimelineChart data={mk('mobility_control','mobility_policy',100)}
+              label="Social mobility index (%)" color="#14b8a6"
+              formatY={v => `${v.toFixed(1)}%`} />
             <div className="bg-slate-50 rounded-xl p-4 text-xs text-slate-600 space-y-1">
               <p className="font-medium text-slate-700">{t.simulation.sources_social_title}</p>
               <p>{t.simulation.sources_social_body}</p>
+              <p className="text-slate-500 mt-1">
+                Gender equality: WEF GGI 2023 · Discrimination: EU FRA MIDIS-II ·
+                Social mobility: Chetty et al. (2014), Corak (2013)
+              </p>
             </div>
           </>}
 

@@ -32,6 +32,12 @@ class CountryProfile:
     education_index: float = 0.75
     # Absolute poverty line €/month (Eurostat 60%-of-national-median approach)
     poverty_line_eur: float = 900.0
+    # WEF Gender Gap Index 2023 (0=perfect inequality, 1=perfect equality)
+    gender_equality_index: float = 0.720
+    # Anti-discrimination composite (EU FRA MIDIS-II + ESS; higher = less discrimination)
+    antidiscrimination_index: float = 0.650
+    # Intergenerational social mobility (Chetty/Corak rank-rank proxy)
+    social_mobility_index: float = 0.550
 
 
 PROFILES: dict[str, CountryProfile] = {
@@ -50,6 +56,7 @@ PROFILES: dict[str, CountryProfile] = {
         political_std=0.33, collectivism=0.62,
         carbon_baseline_t=5.1, healthcare_access=0.88,
         education_index=0.74, poverty_line_eur=1063,
+        gender_equality_index=0.791, antidiscrimination_index=0.68, social_mobility_index=0.55,
     ),
     "us": CountryProfile(
         code="us", name="United States",
@@ -66,6 +73,7 @@ PROFILES: dict[str, CountryProfile] = {
         political_std=0.42, collectivism=0.38,
         carbon_baseline_t=14.5, healthcare_access=0.70,
         education_index=0.67, poverty_line_eur=1250,
+        gender_equality_index=0.748, antidiscrimination_index=0.62, social_mobility_index=0.45,
     ),
     "dk": CountryProfile(
         code="dk", name="Denmark",
@@ -82,6 +90,7 @@ PROFILES: dict[str, CountryProfile] = {
         political_std=0.28, collectivism=0.74,
         carbon_baseline_t=6.2, healthcare_access=0.92,
         education_index=0.81, poverty_line_eur=1520,
+        gender_equality_index=0.892, antidiscrimination_index=0.82, social_mobility_index=0.82,
     ),
     "de": CountryProfile(
         code="de", name="Germany",
@@ -98,6 +107,7 @@ PROFILES: dict[str, CountryProfile] = {
         political_std=0.33, collectivism=0.57,
         carbon_baseline_t=8.1, healthcare_access=0.89,
         education_index=0.77, poverty_line_eur=1050,
+        gender_equality_index=0.815, antidiscrimination_index=0.72, social_mobility_index=0.60,
     ),
     "se": CountryProfile(
         code="se", name="Sweden",
@@ -114,6 +124,7 @@ PROFILES: dict[str, CountryProfile] = {
         political_std=0.28, collectivism=0.76,
         carbon_baseline_t=4.5, healthcare_access=0.93,
         education_index=0.82, poverty_line_eur=1600,
+        gender_equality_index=0.928, antidiscrimination_index=0.84, social_mobility_index=0.78,
     ),
     "no": CountryProfile(
         code="no", name="Norway",
@@ -130,6 +141,7 @@ PROFILES: dict[str, CountryProfile] = {
         political_std=0.27, collectivism=0.78,
         carbon_baseline_t=7.5, healthcare_access=0.94,
         education_index=0.82, poverty_line_eur=2100,
+        gender_equality_index=0.875, antidiscrimination_index=0.83, social_mobility_index=0.75,
     ),
     "fi": CountryProfile(
         code="fi", name="Finland",
@@ -146,6 +158,7 @@ PROFILES: dict[str, CountryProfile] = {
         political_std=0.30, collectivism=0.72,
         carbon_baseline_t=7.8, healthcare_access=0.91,
         education_index=0.85, poverty_line_eur=1450,
+        gender_equality_index=0.863, antidiscrimination_index=0.81, social_mobility_index=0.74,
     ),
     "ca": CountryProfile(
         code="ca", name="Canada",
@@ -162,6 +175,7 @@ PROFILES: dict[str, CountryProfile] = {
         political_std=0.34, collectivism=0.59,
         carbon_baseline_t=14.0, healthcare_access=0.85,
         education_index=0.73, poverty_line_eur=1150,
+        gender_equality_index=0.770, antidiscrimination_index=0.75, social_mobility_index=0.65,
     ),
     "gb": CountryProfile(
         code="gb", name="United Kingdom",
@@ -178,6 +192,7 @@ PROFILES: dict[str, CountryProfile] = {
         political_std=0.36, collectivism=0.52,
         carbon_baseline_t=5.5, healthcare_access=0.83,
         education_index=0.72, poverty_line_eur=1100,
+        gender_equality_index=0.792, antidiscrimination_index=0.66, social_mobility_index=0.50,
     ),
     "jp": CountryProfile(
         code="jp", name="Japan",

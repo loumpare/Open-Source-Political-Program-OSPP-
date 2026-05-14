@@ -112,6 +112,34 @@ class CitizenAgent(Agent):
                                              + rng.gauss(0, 0.07)
                                              ))
 
+        # ── Gender equality ───────────────────────────────────────────────────
+        # Sources: WEF Gender Gap Index 2023, OECD Employment Outlook 2023
+        inc_ge = (self.decile / 9) * 0.08
+        emp_ge = 0.05 if self.employed else -0.03
+        self.gender_equality = round(max(0.0, min(1.0,
+            profile.gender_equality_index + inc_ge + emp_ge
+            + rng.gauss(0, 0.06)
+        )), 3)
+
+        # ── Discrimination score (1=none, 0=severe) ───────────────────────────
+        # Sources: EU FRA MIDIS-II 2017, ESS Round 9, Eurobarometer 437/2016
+        edu_disc   = self.education_score * 0.12
+        trust_disc = self.social_trust * 0.15
+        self.discrimination_score = round(max(0.0, min(1.0,
+            profile.antidiscrimination_index + edu_disc + trust_disc
+            + rng.gauss(0, 0.06)
+        )), 3)
+
+        # ── Social mobility ───────────────────────────────────────────────────
+        # Sources: Chetty et al. (2014), Corak (2013) — "Great Gatsby Curve"
+        edu_mob  = self.education_score * 0.10
+        gini_mob = -profile.gini * 0.35   # higher inequality → lower mobility
+        dec_mob  = (self.decile / 9) * 0.08
+        self.social_mobility = round(max(0.0, min(1.0,
+            profile.social_mobility_index + edu_mob + gini_mob + dec_mob
+            + rng.gauss(0, 0.05)
+        )), 3)
+
         # ── Policy state ─────────────────────────────────────────────────────
         self.policy = policy
         self.with_policy = with_policy
@@ -216,6 +244,18 @@ class CitizenAgent(Agent):
                                              self.governance_trust + gov_boost
                                              ))
 
+        # Gender equality
+        self.gender_equality = min(1.0,
+            self.gender_equality + p.gender_equality_delta)
+
+        # Discrimination score
+        self.discrimination_score = min(1.0,
+            self.discrimination_score + p.discrimination_delta)
+
+        # Social mobility
+        self.social_mobility = min(1.0,
+            self.social_mobility + p.mobility_delta)
+
     # ── Mesa step ─────────────────────────────────────────────────────────────
 
     def step(self) -> None:
@@ -286,6 +326,27 @@ class CitizenAgent(Agent):
                                                    (tgt_g - self.governance_trust)
                                                    + rng.gauss(0, 0.007)
                                                    )), 3)
+
+        # Gender equality: slow upward trend (societal progress)
+        tgt_ge = min(1.0, self.gender_equality + 0.001)
+        self.gender_equality = round(max(0.0, min(1.0,
+            self.gender_equality + 0.02 * (tgt_ge - self.gender_equality)
+            + rng.gauss(0, 0.005)
+        )), 3)
+
+        # Discrimination: mean-reverting toward social trust level
+        tgt_disc = 0.60 + self.social_trust * 0.20
+        self.discrimination_score = round(max(0.0, min(1.0,
+            self.discrimination_score + 0.02 * (tgt_disc - self.discrimination_score)
+            + rng.gauss(0, 0.005)
+        )), 3)
+
+        # Social mobility: very slow (structural, decade-scale)
+        tgt_mob = self.social_mobility + 0.0005
+        self.social_mobility = round(max(0.0, min(1.0,
+            self.social_mobility + 0.01 * (tgt_mob - self.social_mobility)
+            + rng.gauss(0, 0.004)
+        )), 3)
 
         self.consumption = self.income * (1 - self.savings_rate)
 
