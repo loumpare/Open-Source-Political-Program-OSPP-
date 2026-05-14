@@ -27,11 +27,14 @@ sys.path.insert(0, str(Path(__file__).parent.parent))
 import chromadb
 import requests
 from dotenv import load_dotenv
-from fastapi import FastAPI, HTTPException
+from fastapi import FastAPI, HTTPException, Request
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import StreamingResponse
 from pydantic import BaseModel
 from sentence_transformers import SentenceTransformer
+from slowapi import Limiter, _rate_limit_exceeded_handler
+from slowapi.errors import RateLimitExceeded
+from slowapi.util import get_remote_address
 
 # ── Config ───────────────────────────────────────────────────────────────────
 
@@ -153,16 +156,37 @@ def get_counts(proposal_id: str) -> dict:
 
 app = FastAPI(title="OSPP Research API", version="3.0.0")
 
+# ── Rate limiting ─────────────────────────────────────────────────────────────
+limiter = Limiter(key_func=get_remote_address)
+app.state.limiter = limiter
+app.add_exception_handler(RateLimitExceeded, _rate_limit_exceeded_handler)
+
+# ── CORS ─────────────────────────────────────────────────────────────────────
+_CORS_ORIGINS = [
+    o.strip()
+    for o in os.getenv(
+        "CORS_ORIGINS",
+        "http://localhost:3000,http://localhost:4173,http://127.0.0.1:3000",
+    ).split(",")
+    if o.strip()
+]
+
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=[
-        "http://localhost:3000",
-        "http://localhost:4173",
-        "http://127.0.0.1:3000",
-    ],
-    allow_methods=["POST", "GET", "DELETE", "OPTIONS"],
-    allow_headers=["*"],
+    allow_origins=_CORS_ORIGINS,
+    allow_methods=["POST", "GET", "OPTIONS"],
+    allow_headers=["Content-Type", "Accept"],
 )
+
+
+@app.middleware("http")
+async def security_headers(request: Request, call_next):
+    response = await call_next(request)
+    response.headers["X-Content-Type-Options"] = "nosniff"
+    response.headers["X-Frame-Options"] = "DENY"
+    response.headers["X-XSS-Protection"] = "1; mode=block"
+    response.headers["Referrer-Policy"] = "strict-origin-when-cross-origin"
+    return response
 
 
 @app.on_event("startup")
@@ -374,9 +398,12 @@ def health():
 
 
 @app.post("/ask")
-async def ask(req: AskRequest):
+@limiter.limit("20/minute")
+async def ask(request: Request, req: AskRequest):
     if not req.question.strip():
         raise HTTPException(400, "Question cannot be empty")
+    if len(req.question) > 500:
+        raise HTTPException(400, "Question too long (max 500 chars)")
 
     chunks, sources = retrieve(req.question, req.domain)
     if not chunks:
@@ -477,7 +504,8 @@ def _apply_scenario(policy, scenario: str):
 
 
 @app.post("/simulate")
-def simulate(req: SimulateRequest):
+@limiter.limit("5/hour")
+def simulate(request: Request, req: SimulateRequest):
     """Run an ABM policy simulation and return time-series results."""
     if req.n_agents < 100:
         raise HTTPException(400, "n_agents must be ≥ 100")
@@ -606,7 +634,8 @@ async def _stream_interpretation(
 
 
 @app.post("/simulate/interpret")
-async def simulate_interpret(req: InterpretRequest):
+@limiter.limit("10/hour")
+async def simulate_interpret(request: Request, req: InterpretRequest):
     """Stream an Ollama interpretation of simulation results."""
     return StreamingResponse(
         _stream_interpretation(req.meta, req.summary),
@@ -702,7 +731,8 @@ def _aggregate_runs(runs: list[dict]) -> dict:
 
 
 @app.post("/simulate/montecarlo")
-def simulate_montecarlo(req: MonteCarloRequest):
+@limiter.limit("2/hour")
+def simulate_montecarlo(request: Request, req: MonteCarloRequest):
     """Run N simulations with different seeds and return aggregated stats."""
     if req.n_agents < 100:
         raise HTTPException(400, "n_agents must be ≥ 100")
