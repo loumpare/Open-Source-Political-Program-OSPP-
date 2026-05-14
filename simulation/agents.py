@@ -150,13 +150,25 @@ class CitizenAgent(Agent):
         if self.policy is None or self.policy_applied:
             return
         self.policy_applied = True
-        if not self._is_targeted():
-            return
 
         p = self.policy
         rng = self.model.rng_instance
 
-        # Economic
+        # ── Universal transfer (all policy-group agents, regardless of targeting)
+        # Used for tax revenue redistribution (e.g. wealth tax dividend)
+        if p.universal_transfer > 0:
+            self.income += p.universal_transfer
+            self.base_income = max(
+                self.base_income, self.income * 0.90
+            )
+            self.wellbeing = min(
+                1.0, self.wellbeing + p.universal_transfer / 8_000
+            )
+
+        if not self._is_targeted():
+            return
+
+        # Economic (targeted agents only)
         new_income = self.income * p.income_multiplier + p.monthly_transfer
         self.income = new_income
         self.base_income = max(self.base_income, new_income * 0.90)

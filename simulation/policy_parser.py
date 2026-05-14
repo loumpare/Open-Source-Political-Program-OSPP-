@@ -23,8 +23,11 @@ class PolicyParams:
     title: str
     country: str
     domain: str
-    # Direct fiscal transfer per targeted agent (€/month, 0 = none)
+    # Fiscal transfer to targeted agents only (€/month)
     monthly_transfer: float = 0.0
+    # Universal transfer to ALL agents — used for tax-revenue redistribution
+    # e.g. wealth tax dividend: rich pays via income_multiplier<1, everyone receives
+    universal_transfer: float = 0.0
     # Employment rate change (e.g. +0.02 = +2 percentage points)
     employment_delta: float = 0.0
     # Income multiplier for targeted agents (1.08 = +8% income)
@@ -73,7 +76,8 @@ def _read_proposal(md_path: str) -> tuple[str, dict]:
 # ── LLM extraction ────────────────────────────────────────────────────────────
 
 _SCHEMA = """{
-  "monthly_transfer": <direct €/month per targeted person, 0 if none>,
+  "monthly_transfer": <direct €/month ONLY to targeted agents (e.g. low-income), 0 if none>,
+  "universal_transfer": <€/month to ALL agents as redistribution of tax revenue (e.g. wealth tax dividend), 0 if none>,
   "employment_delta": <employment rate change, e.g. -0.005 for min-wage, +0.02 for subsidies>,
   "income_multiplier": <multiplier for targeted workers, e.g. 1.12 for +12% wage>,
   "gini_delta": <Gini change; negative = more equal, e.g. -0.015>,
@@ -119,6 +123,41 @@ def _extract_with_llm(title: str, body: str) -> dict:
     return {}
 
 
+# ── Post-processing: fix known LLM blind spots ────────────────────────────────
+
+_WEALTH_KEYS = ("FORTUNE", "PATRIMO", "RICHESSE", "WEALTH", "ISF", "IFI",
+                "MILLIARD", "MILLIONNAIRE")
+
+
+def _postprocess(proposal_id: str, title: str, extracted: dict) -> dict:
+    """
+    Correct systematic Ollama errors for known policy patterns.
+    LLMs often miss the TWO-SIDED nature of redistribution policies.
+    """
+    pid = proposal_id.upper()
+    title_up = title.upper()
+
+    # Wealth tax: LLM sees the dividend but misses who PAYS.
+    # Fix: D9-D10 pay (income_multiplier < 1), all receive universal_transfer.
+    is_wealth = any(k in pid or k in title_up for k in _WEALTH_KEYS)
+    if is_wealth:
+        # Force rich-side taxation
+        if extracted.get("income_multiplier", 1.0) >= 1.0:
+            extracted["income_multiplier"] = 0.93   # -7% for top earners
+        # Force top-decile targeting
+        deciles = extracted.get("target_income_deciles", [])
+        if not deciles or min(deciles) < 7:
+            extracted["target_income_deciles"] = [8, 9]
+        # Ensure universal dividend exists
+        if extracted.get("universal_transfer", 0) == 0:
+            extracted["universal_transfer"] = 140
+        extracted["employment_delta"] = max(
+            extracted.get("employment_delta", 0), 0.005
+        )
+
+    return extracted
+
+
 # ── Rule-based fallback ───────────────────────────────────────────────────────
 
 def _fallback(proposal_id: str) -> dict:
@@ -127,6 +166,37 @@ def _fallback(proposal_id: str) -> dict:
     Sources: Card & Krueger (1994), Dube et al. (2010), IPCC AR6, OECD (2015).
     """
     pid = proposal_id.upper()
+
+    # ── Wealth tax / ISF / taxe fortune ──────────────────────────────────────
+    # Two-sided mechanism: rich pay (D9-D10), everyone receives (universal dividend)
+    # Literature: Saez & Zucman (2019), income Gini -0.008 to -0.018 over 5y
+    # NOTE: real wealth Gini effect is larger but our model tracks income only
+    _WEALTH_KEYS = ("FORTUNE", "PATRIMO", "RICHESSE", "WEALTH", "ISF", "IFI",
+                    "MILLIARD", "SUPER-RICH", "MILLIONNAIRE")
+    if any(k in pid for k in _WEALTH_KEYS):
+        return {
+            "monthly_transfer":       0,
+            # ALL agents receive the redistributed tax revenue
+            "universal_transfer":   140,    # ~140€/mois dividende universel
+            "employment_delta":    0.005,
+            # D9-D10 pay the wealth tax: ~7% income reduction (proxy)
+            "income_multiplier":    0.93,
+            "gini_delta": -0.015,  # Saez & Zucman 2019
+            "wellbeing_delta":      0.03,
+            "carbon_multiplier":    0.99,
+            "education_delta":      0.02,
+            "governance_delta":     0.04,   # legitimacy boost
+            "horizon_years":        5,
+            # IMPORTANT: target the TOP deciles (who pay), not the poor
+            "target_income_deciles": [8, 9],  # D9-D10 = proxy for high-wealth
+            "target_age_min": 18, "target_age_max": 90,
+            "effect_description": (
+                "Progressive wealth tax reduces capital income of top 10% by ~7%"
+                " and distributes ~140€/month universal dividend to all "
+                "(Saez & Zucman 2019). Note: real wealth Gini impact is 3-5× larger"
+                " but our model tracks income, not accumulated wealth."
+            ),
+        }
 
     # ── Minimum wage / SMIC ──────────────────────────────────────────────────
     # Literature: GDP +0.5–1.5%, employment -0.3 to -0.8 pp, poverty -2 to -5 pp
@@ -274,7 +344,8 @@ def parse_proposal(md_path: str) -> PolicyParams:
     country = fm.get("country", "global").lower()
     domain = fm.get("domain",  "economy").lower()
 
-    extracted = _extract_with_llm(title, body) or _fallback(proposal_id)
+    raw = _extract_with_llm(title, body) or _fallback(proposal_id)
+    extracted = _postprocess(proposal_id, title, raw)
 
     return PolicyParams(
         proposal_id=proposal_id,
@@ -282,6 +353,7 @@ def parse_proposal(md_path: str) -> PolicyParams:
         country=country,
         domain=domain,
         monthly_transfer=float(extracted.get("monthly_transfer", 0)),
+        universal_transfer=float(extracted.get("universal_transfer", 0)),
         employment_delta=float(extracted.get("employment_delta", 0)),
         income_multiplier=float(extracted.get("income_multiplier", 1.0)),
         gini_delta=float(extracted.get("gini_delta", 0)),
@@ -302,11 +374,13 @@ def parse_proposal(md_path: str) -> PolicyParams:
 def parse_proposal_dict(proposal_id: str, title: str, country: str,
                         domain: str, body: str = "") -> PolicyParams:
     """Parse from already-loaded data (no file needed — used by the API)."""
-    extracted = _extract_with_llm(title, body) or _fallback(proposal_id)
+    raw = _extract_with_llm(title, body) or _fallback(proposal_id)
+    extracted = _postprocess(proposal_id, title, raw)
     return PolicyParams(
         proposal_id=proposal_id, title=title,
         country=country.lower(), domain=domain.lower(),
         monthly_transfer=float(extracted.get("monthly_transfer", 0)),
+        universal_transfer=float(extracted.get("universal_transfer", 0)),
         employment_delta=float(extracted.get("employment_delta", 0)),
         income_multiplier=float(extracted.get("income_multiplier", 1.0)),
         gini_delta=float(extracted.get("gini_delta", 0)),
