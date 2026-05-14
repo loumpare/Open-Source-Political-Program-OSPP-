@@ -1,4 +1,4 @@
-import { useState } from 'react'
+import { useState, useMemo } from 'react'
 import { PROPOSALS } from '../../data/proposals'
 import { API_BASE } from '../../config'
 import { useLanguage } from '../../i18n'
@@ -15,6 +15,11 @@ const SCENARIO_STYLES = {
   optimistic:  { color: 'text-emerald-600', bg: 'bg-emerald-50 border-emerald-300' },
 }
 
+// All unique countries extracted from proposals
+const ALL_COUNTRIES = Array.from(
+  new Map(PROPOSALS.map(p => [p.country, p.countryFlag])).entries()
+).map(([country, flag]) => ({ country, flag }))
+
 interface LaunchParams {
   proposalId: string; nAgents: number; years: number; scenario: string; seed: number
 }
@@ -22,20 +27,46 @@ interface LaunchParams {
 interface Props {
   onResults: (r: unknown, params: LaunchParams) => void
   onLoading: (v: boolean) => void
+  /** Called whenever the selected country changes — used by parent for the globe */
+  onCountryChange?: (flag: string, name: string) => void
 }
 
-export default function SimulationLauncher({ onResults, onLoading }: Props) {
+export default function SimulationLauncher({ onResults, onLoading, onCountryChange }: Props) {
   const { t } = useLanguage()
-  const [proposalId, setProposalId] = useState(PROPOSALS[0].id)
-  const [nAgents, setNAgents]       = useState(10_000)
-  const [years, setYears]           = useState(5)
-  const [scenario, setScenario]     = useState('baseline')
-  const [seed, setSeed]             = useState(42)
-  const [running, setRunning]       = useState(false)
-  const [error, setError]           = useState('')
 
-  const selected = PROPOSALS.find(p => p.id === proposalId) ?? PROPOSALS[0]
+  const [selectedCountry, setSelectedCountry] = useState<string>('')
+  const [proposalId, setProposalId]           = useState(PROPOSALS[0].id)
+  const [nAgents, setNAgents]                 = useState(10_000)
+  const [years, setYears]                     = useState(5)
+  const [scenario, setScenario]               = useState('baseline')
+  const [seed, setSeed]                       = useState(42)
+  const [running, setRunning]                 = useState(false)
+  const [error, setError]                     = useState('')
+
+  // Filter proposals by selected country
+  const filteredProposals = useMemo(() => {
+    if (!selectedCountry) return PROPOSALS
+    return PROPOSALS.filter(p => p.country === selectedCountry)
+  }, [selectedCountry])
+
+  const selected = filteredProposals.find(p => p.id === proposalId)
+    ?? filteredProposals[0]
+    ?? PROPOSALS[0]
+
   const countryCode = COUNTRY_CODES[selected.country] ?? 'global'
+
+  function pickCountry(country: string, flag: string) {
+    setSelectedCountry(country)
+    // Auto-select first proposal of that country
+    const first = PROPOSALS.find(p => p.country === country)
+    if (first) setProposalId(first.id)
+    onCountryChange?.(flag, country)
+  }
+
+  function clearCountry() {
+    setSelectedCountry('')
+    onCountryChange?.('', '')
+  }
 
   const SCENARIOS = [
     { id: 'pessimistic', label: t.simulation.scenario_pessimistic },
@@ -74,11 +105,11 @@ export default function SimulationLauncher({ onResults, onLoading }: Props) {
         }),
       })
       if (!res.ok) throw new Error(await res.text() || `HTTP ${res.status}`)
-      const params: LaunchParams = { proposalId, nAgents, years, scenario, seed }
+      const params: LaunchParams = { proposalId: selected.id, nAgents, years, scenario, seed }
       onResults(await res.json(), params)
     } catch (e) {
       setError(e instanceof Error ? e.message : t.errors.api_offline)
-      onResults(null, { proposalId, nAgents, years, scenario, seed })
+      onResults(null, { proposalId: selected.id, nAgents, years, scenario, seed })
     } finally {
       setRunning(false); onLoading(false)
     }
@@ -91,6 +122,45 @@ export default function SimulationLauncher({ onResults, onLoading }: Props) {
         <p className="text-xs text-slate-400 mt-0.5">{t.simulation.launcher_subtitle}</p>
       </div>
 
+      {/* Country selector */}
+      <div>
+        <div className="flex items-center justify-between mb-2">
+          <label className="text-xs font-semibold text-slate-500 uppercase tracking-wide">
+            Country
+          </label>
+          {selectedCountry && (
+            <button
+              onClick={clearCountry}
+              className="text-xs text-indigo-500 hover:text-indigo-700"
+            >
+              All countries ×
+            </button>
+          )}
+        </div>
+        <div className="grid grid-cols-4 gap-1.5">
+          {ALL_COUNTRIES.map(({ country, flag }) => (
+            <button
+              key={country}
+              onClick={() => pickCountry(country, flag)}
+              title={country}
+              className={`flex flex-col items-center gap-0.5 py-2 rounded-xl border text-xs
+                          transition-all font-medium
+                ${selectedCountry === country
+                  ? 'bg-indigo-600 border-indigo-600 text-white shadow-md scale-105'
+                  : 'bg-white border-slate-200 text-slate-600 hover:border-indigo-300 hover:bg-indigo-50'
+                }`}
+            >
+              <span className="text-lg leading-none">{flag}</span>
+              <span className="text-[10px] leading-tight truncate w-full text-center px-0.5">
+                {country === 'United States' ? 'USA'
+                  : country === 'United Kingdom' ? 'UK'
+                  : country}
+              </span>
+            </button>
+          ))}
+        </div>
+      </div>
+
       {/* Proposal */}
       <div>
         <label className="block text-xs font-semibold text-slate-500 uppercase tracking-wide mb-1.5">
@@ -99,10 +169,10 @@ export default function SimulationLauncher({ onResults, onLoading }: Props) {
         <select
           className="w-full border border-slate-200 rounded-lg px-3 py-2 text-sm bg-white
                      focus:outline-none focus:ring-2 focus:ring-indigo-400 text-slate-700"
-          value={proposalId}
+          value={selected.id}
           onChange={e => setProposalId(e.target.value)}
         >
-          {PROPOSALS.map(p => (
+          {filteredProposals.map(p => (
             <option key={p.id} value={p.id}>[{p.id}] {p.title}</option>
           ))}
         </select>

@@ -2,6 +2,7 @@ import { useState } from 'react'
 import SimulationLauncher from '../components/simulation/SimulationLauncher'
 import SimulationResults from '../components/simulation/SimulationResults'
 import MonteCarloResults from '../components/simulation/MonteCarloResults'
+import GlobeLoader from '../components/simulation/GlobeLoader'
 import { PROPOSALS } from '../data/proposals'
 import { API_BASE } from '../config'
 import { useLanguage, type LangCode } from '../i18n'
@@ -16,13 +17,15 @@ type Mode = 'single' | 'montecarlo'
 
 export default function Simulations() {
   const { t } = useLanguage()
-  const [results, setResults]   = useState<unknown>(null)
+  const [results, setResults]     = useState<unknown>(null)
   const [mcResults, setMcResults] = useState<unknown>(null)
-  const [loading, setLoading]   = useState(false)
-  const [mode, setMode]         = useState<Mode>('single')
-  const [mcRuns, setMcRuns]     = useState(10)
-  const [mcError, setMcError]   = useState('')
+  const [loading, setLoading]     = useState(false)
+  const [mode, setMode]           = useState<Mode>('single')
+  const [mcRuns, setMcRuns]       = useState(10)
+  const [mcError, setMcError]     = useState('')
   const [mcLoading, setMcLoading] = useState(false)
+  const [globeFlag, setGlobeFlag] = useState('')
+  const [globeName, setGlobeName] = useState('')
 
   // Shared params for Monte Carlo — reuse what SimulationLauncher last submitted
   const [lastParams, setLastParams] = useState<{
@@ -112,6 +115,7 @@ export default function Simulations() {
             <SimulationLauncher
               onResults={(r, params) => handleResults(r, params)}
               onLoading={setLoading}
+              onCountryChange={(flag, name) => { setGlobeFlag(flag); setGlobeName(name) }}
             />
 
             {/* Monte Carlo panel — visible after a simulation ran */}
@@ -194,20 +198,15 @@ export default function Simulations() {
               </div>
             )}
 
-            {/* Loading spinner */}
+            {/* Globe loader */}
             {(loading || mcLoading) && (
-              <div className="flex flex-col items-center justify-center h-80 gap-4">
-                <div className="relative">
-                  <div className="w-16 h-16 rounded-full border-4 border-indigo-100"/>
-                  <div className="absolute inset-0 w-16 h-16 rounded-full border-4 border-indigo-600 border-t-transparent animate-spin"/>
-                </div>
-                <div className="text-center">
-                  <p className="text-slate-700 font-medium">
-                    {mcLoading ? `${t.simulation.mc_running} (${mcRuns} runs)` : t.simulation.btn_running}
-                  </p>
-                  <p className="text-slate-400 text-sm mt-1">Mesa 3 · agents économiques + sociaux</p>
-                </div>
-              </div>
+              <GlobeLoader
+                message={mcLoading
+                  ? `${t.simulation.mc_running} (${mcRuns} runs)`
+                  : t.simulation.btn_running}
+                countryFlag={globeFlag || undefined}
+                countryName={globeName || undefined}
+              />
             )}
 
             {/* Empty state */}
