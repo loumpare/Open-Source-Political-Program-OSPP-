@@ -51,6 +51,12 @@ class PolicyParams:
     education_delta: float = 0.0
     # Governance / institutional trust delta
     governance_delta: float = 0.0
+    # Wealth tax: annual rate on patrimony above threshold (0.015 = 1.5 %/year)
+    wealth_tax_rate: float = 0.0
+    # Minimum patrimony subject to wealth tax (€), 0 = disabled
+    wealth_tax_threshold: float = 0.0
+    # Mortality risk delta (negative = fewer deaths, e.g. -0.001)
+    mortality_delta: float = 0.0
     # Gender equality delta — WEF GGI scale (0.04 = +4 pp)
     gender_equality_delta: float = 0.0
     # Anti-discrimination delta (positive = less discrimination)
@@ -148,19 +154,14 @@ def _postprocess(proposal_id: str, title: str, extracted: dict) -> dict:
     # Fix: D9-D10 pay (income_multiplier < 1), all receive universal_transfer.
     is_wealth = any(k in pid or k in title_up for k in _WEALTH_KEYS)
     if is_wealth:
-        # Force rich-side taxation
-        if extracted.get("income_multiplier", 1.0) >= 1.0:
-            extracted["income_multiplier"] = 0.93   # -7% for top earners
-        # Force top-decile targeting
-        deciles = extracted.get("target_income_deciles", [])
-        if not deciles or min(deciles) < 7:
-            extracted["target_income_deciles"] = [8, 9]
+        # Switch to real wealth-tax mechanism (patrimony, not income proxy)
+        extracted["wealth_tax_rate"]      = 0.015
+        extracted["wealth_tax_threshold"] = 1_300_000
+        extracted["income_multiplier"]    = 1.0   # no income proxy
+        extracted["target_income_deciles"] = list(range(10))  # wealth filter handles it
         # Ensure universal dividend exists
         if extracted.get("universal_transfer", 0) == 0:
             extracted["universal_transfer"] = 140
-        extracted["employment_delta"] = max(
-            extracted.get("employment_delta", 0), 0.005
-        )
 
     return extracted
 
@@ -192,17 +193,22 @@ def _fallback(proposal_id: str) -> dict:
             "wellbeing_delta":      0.03,
             "carbon_multiplier":    0.99,
             "education_delta":      0.02,
-            "governance_delta":     0.04,
+            "governance_delta":      0.04,
             "gender_equality_delta": 0.01,
             "discrimination_delta":  0.01,
             "mobility_delta":        0.02,
+            "mortality_delta":       0.0,
+            # Real wealth-tax mechanism: targets patrimony, not income decile
+            "wealth_tax_rate":       0.015,   # 1.5 %/year (ISF rate)
+            "wealth_tax_threshold":  1_300_000,  # €1.3M ISF threshold
+            "income_multiplier":     1.0,      # no income proxy needed
+            "target_income_deciles": list(range(10)),  # wealth filter handles it
             "horizon_years":        5,
-            "target_income_deciles": [8, 9],
             "target_age_min": 18, "target_age_max": 90,
             "effect_description": (
-                "Progressive wealth tax reduces capital income of top 10% by ~7%"
-                " and distributes ~140€/month universal dividend to all "
-                "(Saez & Zucman 2019)."
+                "Progressive 1.5 %/year wealth tax on patrimony above €1.3M "
+                "redistributes ~140€/month universal dividend. "
+                "Saez & Zucman (2019): wealth Gini -0.05 to -0.15."
             ),
         }
 
@@ -220,6 +226,7 @@ def _fallback(proposal_id: str) -> dict:
             "governance_delta":      0.01,
             "gender_equality_delta": 0.02,  # min-wage workers are mostly women
             "discrimination_delta":  0.01,
+            "mortality_delta":       0.0,
             "mobility_delta":        0.015,
             "horizon_years":        5,
             "target_income_deciles": [0, 1, 2, 3],
@@ -243,6 +250,7 @@ def _fallback(proposal_id: str) -> dict:
             "governance_delta":      0.02,
             "gender_equality_delta": 0.04,  # UBI/parental leave large gender effect
             "discrimination_delta":  0.02,
+            "mortality_delta":       0.0,
             "mobility_delta":        0.03,
             "horizon_years":        5,
             "target_income_deciles": list(range(10)),
@@ -265,6 +273,7 @@ def _fallback(proposal_id: str) -> dict:
             "governance_delta":      0.03,
             "gender_equality_delta": 0.02,
             "discrimination_delta":  0.01,
+            "mortality_delta":       0.0,
             "mobility_delta":        0.01,
             "horizon_years":        8,
             "target_income_deciles": list(range(10)),
@@ -289,6 +298,7 @@ def _fallback(proposal_id: str) -> dict:
             "governance_delta":      0.02,
             "gender_equality_delta": 0.01,
             "discrimination_delta":  0.005,
+            "mortality_delta":       0.0,
             "mobility_delta":        0.01,
             "horizon_years":        10,
             "target_income_deciles": list(range(10)),
@@ -312,6 +322,7 @@ def _fallback(proposal_id: str) -> dict:
             "governance_delta":      0.03,
             "gender_equality_delta": 0.03,  # edu reduces gender gap (UNESCO 2023)
             "discrimination_delta":  0.04,  # Pettigrew & Tropp (2006)
+            "mortality_delta":       0.0,
             "mobility_delta":        0.05,  # Chetty et al. (2020) — largest effect
             "horizon_years":        10,
             "target_income_deciles": [0, 1, 2, 3, 4],
@@ -334,6 +345,7 @@ def _fallback(proposal_id: str) -> dict:
             "governance_delta":      0.08,
             "gender_equality_delta": 0.02,
             "discrimination_delta":  0.05,  # anti-discrimination law (EU FRA 2020)
+            "mortality_delta":       0.0,
             "mobility_delta":        0.02,
             "horizon_years":        5,
             "target_income_deciles": list(range(10)),
@@ -355,6 +367,7 @@ def _fallback(proposal_id: str) -> dict:
         "governance_delta":      0.01,
         "gender_equality_delta": 0.005,
         "discrimination_delta":  0.005,
+        "mortality_delta":       0.0,
         "mobility_delta":        0.005,
         "horizon_years":         5,
         "target_income_deciles": list(range(10)),
@@ -390,6 +403,8 @@ def parse_proposal(md_path: str) -> PolicyParams:
         carbon_multiplier=float(extracted.get("carbon_multiplier", 1.0)),
         education_delta=float(extracted.get("education_delta", 0)),
         governance_delta=float(extracted.get("governance_delta", 0)),
+        wealth_tax_rate=float(extracted.get("wealth_tax_rate", 0)),
+        wealth_tax_threshold=float(extracted.get("wealth_tax_threshold", 0)),
         horizon_years=int(extracted.get("horizon_years", 5)),
         target_income_deciles=list(extracted.get(
             "target_income_deciles", list(range(10))
@@ -399,6 +414,7 @@ def parse_proposal(md_path: str) -> PolicyParams:
         gender_equality_delta=float(extracted.get("gender_equality_delta", 0)),
         discrimination_delta=float(extracted.get("discrimination_delta", 0)),
         mobility_delta=float(extracted.get("mobility_delta", 0)),
+        mortality_delta=float(extracted.get("mortality_delta", 0)),
         effect_description=str(extracted.get("effect_description", "")),
     )
 
@@ -411,10 +427,12 @@ def parse_proposal_dict(proposal_id: str, title: str, country: str,
     if not raw:
         raw = fb
     else:
-        # LLM doesn't know about new social metrics — fill from calibrated fallback
-        for key in ("gender_equality_delta", "discrimination_delta", "mobility_delta"):
+        # LLM doesn't know about new social/wealth metrics — fill from fallback
+        for key in ("gender_equality_delta", "discrimination_delta",
+                    "mobility_delta", "mortality_delta",
+                    "wealth_tax_rate", "wealth_tax_threshold"):
             if key not in raw:
-                raw[key] = fb[key]
+                raw[key] = fb.get(key, 0)
     extracted = _postprocess(proposal_id, title, raw)
     return PolicyParams(
         proposal_id=proposal_id, title=title,
@@ -428,6 +446,8 @@ def parse_proposal_dict(proposal_id: str, title: str, country: str,
         carbon_multiplier=float(extracted.get("carbon_multiplier", 1.0)),
         education_delta=float(extracted.get("education_delta", 0)),
         governance_delta=float(extracted.get("governance_delta", 0)),
+        wealth_tax_rate=float(extracted.get("wealth_tax_rate", 0)),
+        wealth_tax_threshold=float(extracted.get("wealth_tax_threshold", 0)),
         horizon_years=int(extracted.get("horizon_years", 5)),
         target_income_deciles=list(extracted.get(
             "target_income_deciles", list(range(10))
@@ -437,5 +457,6 @@ def parse_proposal_dict(proposal_id: str, title: str, country: str,
         gender_equality_delta=float(extracted.get("gender_equality_delta", 0)),
         discrimination_delta=float(extracted.get("discrimination_delta", 0)),
         mobility_delta=float(extracted.get("mobility_delta", 0)),
+        mortality_delta=float(extracted.get("mortality_delta", 0)),
         effect_description=str(extracted.get("effect_description", "")),
     )

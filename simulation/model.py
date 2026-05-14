@@ -73,13 +73,21 @@ class EconomyModel(Model):
                 # 🏛 Gouvernance
                 "governance_control": lambda m: m._mean_attr("governance_trust", False),
                 "governance_policy":  lambda m: m._mean_attr("governance_trust", True),
-                # ⚖️ Métriques sociales avancées
-                "gender_eq_control":  lambda m: m._mean_attr("gender_equality", False),
-                "gender_eq_policy":   lambda m: m._mean_attr("gender_equality", True),
-                "discrim_control":    lambda m: m._mean_attr("discrimination_score", False),
-                "discrim_policy":     lambda m: m._mean_attr("discrimination_score", True),
-                "mobility_control":   lambda m: m._mean_attr("social_mobility", False),
-                "mobility_policy":    lambda m: m._mean_attr("social_mobility", True),
+                # ⚖️ Social avancé
+                "gender_eq_control":   lambda m: m._mean_attr("gender_equality", False),
+                "gender_eq_policy":    lambda m: m._mean_attr("gender_equality", True),
+                "discrim_control":     lambda m: m._mean_attr("discrimination_score", False),
+                "discrim_policy":      lambda m: m._mean_attr("discrimination_score", True),
+                "mobility_control":    lambda m: m._mean_attr("social_mobility", False),
+                "mobility_policy":     lambda m: m._mean_attr("social_mobility", True),
+                # 💀 Mortalité
+                "mortality_control":   lambda m: m._mean_attr("mortality_risk", False),
+                "mortality_policy":    lambda m: m._mean_attr("mortality_risk", True),
+                # 💰 Patrimoine
+                "wealth_gini_control": lambda m: compute_gini(
+                    [a.wealth for a in m._group(False)]),
+                "wealth_gini_policy":  lambda m: compute_gini(
+                    [a.wealth for a in m._group(True)]),
             }
         )
 
@@ -152,11 +160,13 @@ class EconomyModel(Model):
                     s[f"{key}_delta_pct"] = _pct_delta(ctrl, pol)
                 else:
                     s[f"{key}_delta"] = round(pol - ctrl, 4)
-            # ⚖️ Social metrics (separate column prefix mapping)
+            # ⚖️ Social / mortality / wealth (separate column prefix mapping)
             for col, label in [
-                ("gender_eq", "gender_equality"),
-                ("discrim",   "discrimination"),
-                ("mobility",  "mobility"),
+                ("gender_eq",   "gender_equality"),
+                ("discrim",     "discrimination"),
+                ("mobility",    "mobility"),
+                ("mortality",   "mortality"),
+                ("wealth_gini", "wealth_gini"),
             ]:
                 ctrl = float(row[f"{col}_control"])
                 pol  = float(row[f"{col}_policy"])
@@ -202,6 +212,10 @@ class EconomyModel(Model):
                 "gender_equality_delta":  _lv("gender_equality_delta"),
                 "discrimination_delta":   _lv("discrimination_delta"),
                 "mobility_delta":         _lv("mobility_delta"),
+                # 💀 Mortalité
+                "mortality_delta":        _lv("mortality_delta"),
+                # 💰 Patrimoine
+                "wealth_gini_delta":      _lv("wealth_gini_delta"),
                 "effect_description": (
                     self.policy.effect_description if self.policy else ""
                 ),

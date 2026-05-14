@@ -23,6 +23,8 @@ interface SeriesPoint {
   gender_equality_control: number; gender_equality_policy: number; gender_equality_delta: number
   discrimination_control: number; discrimination_policy: number; discrimination_delta: number
   mobility_control: number; mobility_policy: number; mobility_delta: number
+  mortality_control: number; mortality_policy: number; mortality_delta: number
+  wealth_gini_control: number; wealth_gini_policy: number; wealth_gini_delta: number
 }
 
 interface SimResults {
@@ -39,6 +41,7 @@ interface SimResults {
     education_delta: number; governance_delta: number
     trust_delta: number
     gender_equality_delta: number; discrimination_delta: number; mobility_delta: number
+    mortality_delta: number; wealth_gini_delta: number
     effect_description: string
   }
   series: SeriesPoint[]
@@ -290,6 +293,7 @@ export default function SimulationResults({ results }: { results: SimResults }) 
                 { label: t.simulation.metric_gini,       v: summary.gini_delta,             u: '',    g: false },
                 { label: t.simulation.metric_employment, v: summary.employment_delta*100,   u: ' pp', g: true  },
                 { label: t.simulation.metric_poverty,    v: summary.poverty_delta*100,      u: ' pp', g: false },
+                { label: '💰 Wealth Gini',               v: summary.wealth_gini_delta,      u: '',    g: false },
               ].map(k => (
                 <div key={k.label} className="bg-slate-50 rounded-xl p-3">
                   <div className="text-xs text-slate-500 mb-0.5">{k.label}</div>
@@ -300,8 +304,20 @@ export default function SimulationResults({ results }: { results: SimResults }) 
             <TimelineChart data={mk('gdp_control','gdp_policy')}
               label={t.simulation.chart_income} color="#6366f1"
               formatY={v => `${Math.round(v)}€`} />
+
+            {/* Dual Gini comparison */}
+            <div className="bg-amber-50 border border-amber-200 rounded-xl p-3 text-xs text-amber-800 space-y-1">
+              <p className="font-semibold">Income Gini vs Wealth Gini</p>
+              <p>Income Gini measures wage inequality. Wealth Gini measures patrimony
+                concentration — always higher (France ≈ 0.65 vs 0.29 for income).
+                Wealth taxes primarily impact wealth Gini, not income Gini.
+                Sources: Piketty (2014), Crédit Suisse Global Wealth Report 2023.</p>
+            </div>
             <TimelineChart data={mk('gini_control','gini_policy')}
-              label={t.simulation.metric_gini} color="#f59e0b"
+              label={`${t.simulation.metric_gini} (income)`} color="#f59e0b"
+              formatY={v => v.toFixed(3)} />
+            <TimelineChart data={mk('wealth_gini_control','wealth_gini_policy')}
+              label="Wealth Gini (patrimony)" color="#d97706"
               formatY={v => v.toFixed(3)} />
             <TimelineChart data={mk('employment_control','employment_policy',100)}
               label={`${t.simulation.metric_employment} (%)`} color="#10b981"
@@ -438,6 +454,7 @@ export default function SimulationResults({ results }: { results: SimResults }) 
                 { label: t.simulation.metric_trust,     v: summary.trust_delta*100,              g: true  },
                 { label: t.simulation.metric_health,    v: summary.health_delta*100,             g: true  },
                 { label: t.simulation.metric_poverty,   v: summary.poverty_delta*100,            g: false },
+                { label: '💀 Mortality risk',           v: summary.mortality_delta*1000,         g: false },
                 { label: '⚧ Gender equality',           v: summary.gender_equality_delta*100,    g: true  },
                 { label: '✊ Anti-discrimination',       v: summary.discrimination_delta*100,     g: true  },
                 { label: '📈 Social mobility',           v: summary.mobility_delta*100,           g: true  },
@@ -454,6 +471,9 @@ export default function SimulationResults({ results }: { results: SimResults }) 
             <TimelineChart data={mk('health_control','health_policy',100)}
               label={`${t.simulation.metric_health} (%)`} color="#3b82f6"
               formatY={v => `${v.toFixed(1)}%`} />
+            <TimelineChart data={mk('mortality_control','mortality_policy',1000)}
+              label="Mortality risk (‰/year)" color="#dc2626"
+              formatY={v => `${v.toFixed(2)}‰`} />
             <TimelineChart data={mk('trust_control','trust_policy',100)}
               label={`${t.simulation.metric_trust} (%)`} color="#8b5cf6"
               formatY={v => `${v.toFixed(1)}%`} />

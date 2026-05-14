@@ -1,6 +1,8 @@
 """Economic-social-environmental-educational CitizenAgent — Mesa 3."""
 from __future__ import annotations
 
+import math
+
 from mesa import Agent
 
 from simulation.demographics import (
@@ -112,6 +114,29 @@ class CitizenAgent(Agent):
                                              + rng.gauss(0, 0.07)
                                              ))
 
+        # ── Wealth (patrimoine) ───────────────────────────────────────────────
+        # Sources: Crédit Suisse Global Wealth Report 2023, Piketty (2014)
+        # Lognormal: correlated with income decile but with high independent variance
+        income_factor = max(0.05, 0.15 + (self.decile / 9) ** 2 * 3.5)
+        w_median = max(1.0, profile.median_wealth_eur * income_factor)
+        self.wealth = max(0.0, rng.lognormvariate(
+            math.log(w_median), profile.wealth_sigma
+        ))
+        # Capital income: ~3 % annual return on wealth (dividends, rent, interest)
+        self.capital_income = self.wealth * 0.03 / 12   # monthly
+        self.labour_income  = self.income
+        self.income         = self.labour_income + self.capital_income
+
+        # ── Mortality risk ────────────────────────────────────────────────────
+        # Sources: WHO GHE 2019, Mackenbach et al. (2019) — social gradient
+        age_h = math.exp(max(0.0, (self.age - 40) * 0.065))
+        inc_h = max(0.5, 2.0 - (self.decile / 9) * 1.5)
+        hlt_h = max(0.6, 1.8 - self.health_score * 1.4)  # defined below
+        acc_h = max(0.7, 1.6 - profile.healthcare_access * 0.9)
+        self.mortality_risk = round(min(0.40,
+            0.006 * age_h * inc_h * acc_h
+        ), 5)   # health_score not yet set here; refined after health init
+
         # ── Gender equality ───────────────────────────────────────────────────
         # Sources: WEF Gender Gap Index 2023, OECD Employment Outlook 2023
         inc_ge = (self.decile / 9) * 0.08
@@ -139,6 +164,12 @@ class CitizenAgent(Agent):
             profile.social_mobility_index + edu_mob + gini_mob + dec_mob
             + rng.gauss(0, 0.05)
         )), 3)
+
+        # Refine mortality_risk now that health_score is available
+        hlt_h = max(0.6, 1.8 - self.health_score * 1.4)
+        self.mortality_risk = round(min(0.40,
+            0.006 * age_h * inc_h * hlt_h * acc_h
+        ), 5)
 
         # ── Policy state ─────────────────────────────────────────────────────
         self.policy = policy
@@ -193,6 +224,20 @@ class CitizenAgent(Agent):
                 1.0, self.wellbeing + p.universal_transfer / 8_000
             )
 
+        # ── Wealth tax (direct on patrimony, not income proxy) ────────────────
+        if p.wealth_tax_rate > 0 and self.wealth > p.wealth_tax_threshold:
+            annual_tax  = (self.wealth - p.wealth_tax_threshold) * p.wealth_tax_rate
+            monthly_tax = annual_tax / 12
+            # Cap: tax cannot exceed 35 % of income (avoid unrealistic collapse)
+            self.income  = max(self.income * 0.65, self.income - monthly_tax)
+            self.wealth  = max(0.0, self.wealth - annual_tax)
+            self.capital_income = self.wealth * 0.03 / 12
+
+        # ── Mortality effect (universal — affects all policy agents) ──────────
+        if p.mortality_delta != 0:
+            self.mortality_risk = max(0.0, min(0.40,
+                self.mortality_risk + p.mortality_delta))
+
         if not self._is_targeted():
             return
 
@@ -223,6 +268,8 @@ class CitizenAgent(Agent):
             + p.monthly_transfer / 12_000
         )
         self.health_score = min(1.0, self.health_score + health_boost)
+        # Better health → lower mortality
+        self.mortality_risk = max(0.0, self.mortality_risk - health_boost * 0.003)
 
         # Education (direct for edu policies, indirect for income)
         edu_boost = p.education_delta + p.monthly_transfer / 15_000
@@ -347,6 +394,21 @@ class CitizenAgent(Agent):
             self.social_mobility + 0.01 * (tgt_mob - self.social_mobility)
             + rng.gauss(0, 0.004)
         )), 3)
+
+        # Wealth: annual return ~3 % real (volatile)
+        w_return = rng.gauss(0.03, 0.10)
+        self.wealth = max(0.0, self.wealth * (1 + w_return))
+        self.capital_income = self.wealth * 0.03 / 12
+        self.labour_income  = max(100.0, self.income - self.capital_income)
+        self.income         = self.labour_income + self.capital_income
+
+        # Mortality: mean-reverting to age/income baseline
+        age_h  = math.exp(max(0.0, (self.age - 40) * 0.065))
+        tgt_m  = min(0.40, 0.006 * age_h * max(0.5, 2.0 - (self.decile / 9) * 1.5))
+        self.mortality_risk = round(max(0.0, min(0.40,
+            self.mortality_risk + 0.05 * (tgt_m - self.mortality_risk)
+            + rng.gauss(0, 0.0005)
+        )), 5)
 
         self.consumption = self.income * (1 - self.savings_rate)
 
