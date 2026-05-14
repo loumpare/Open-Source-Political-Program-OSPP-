@@ -36,10 +36,20 @@ class EconomyModel(Model):
         self.current_step = 0
 
         profile = get_profile(country)
-        self._poverty_line = profile.poverty_line_eur
+        self._poverty_line  = profile.poverty_line_eur
+        # Profile metadata — accessed by agent step() via getattr
+        self._rd_intensity  = profile.rd_intensity
+        self._startup_rate  = profile.startup_rate
+        self._tax_pressure  = profile.tax_pressure
+        self._median_wealth = profile.median_wealth_eur
 
+        # Symmetric A/B initialisation: both groups draw from the same RNG
+        # sequence so their distributions are statistically identical at t=0.
+        init_state = self.rng_instance.getstate()
         for _ in range(n_agents):
             CitizenAgent(self, profile, policy=policy, with_policy=False)
+        self.rng_instance.setstate(init_state)          # reset — same draws
+        for _ in range(n_agents):
             CitizenAgent(self, profile, policy=policy, with_policy=True)
 
         self.datacollector = DataCollector(
@@ -88,22 +98,38 @@ class EconomyModel(Model):
                     [a.wealth for a in m._group(False)]),
                 "wealth_gini_policy":  lambda m: compute_gini(
                     [a.wealth for a in m._group(True)]),
+                # 💡 Innovation & Entrepreneurship (Aghion 1992, Acs & Audretsch 1990)
+                "innovation_control":        lambda m: m._mean_attr("innovation_score", False),
+                "innovation_policy":         lambda m: m._mean_attr("innovation_score", True),
+                "entrepreneurship_control":  lambda m: m._mean_attr("entrepreneurship", False),
+                "entrepreneurship_policy":   lambda m: m._mean_attr("entrepreneurship", True),
+                # 📊 Investment (savings rate proxy) & Fiscal balance
+                "investment_control":        lambda m: m._mean_attr("savings_rate", False),
+                "investment_policy":         lambda m: m._mean_attr("savings_rate", True),
+                "fiscal_balance_control":    lambda m: m._fiscal_balance(False),
+                "fiscal_balance_policy":     lambda m: m._fiscal_balance(True),
             }
         )
 
     # ── Private metrics ───────────────────────────────────────────────────────
 
     def _group(self, with_policy: bool) -> list[CitizenAgent]:
-        return [
-            a for a in self.agents
-            if isinstance(a, CitizenAgent) and a.with_policy == with_policy
-        ]
+        # Cache per step: DataCollector calls this 17× per collection
+        if not hasattr(self, "_group_cache"):
+            self._group_cache: dict[bool, list[CitizenAgent]] = {}
+        if with_policy not in self._group_cache:
+            self._group_cache[with_policy] = [
+                a for a in self.agents
+                if isinstance(a, CitizenAgent) and a.with_policy == with_policy
+            ]
+        return self._group_cache[with_policy]
 
     def _mean_income(self, with_policy: bool) -> float:
+        # Use labour_income: robust to capital-income outliers; directly reflects policy
         grp = self._group(with_policy)
         if not grp:
             return 0.0
-        return round(sum(a.income for a in grp) / len(grp), 2)
+        return round(sum(a.labour_income for a in grp) / len(grp), 2)
 
     def _mean_attr(self, attr: str, with_policy: bool) -> float:
         grp = self._group(with_policy)
@@ -112,7 +138,7 @@ class EconomyModel(Model):
         return round(sum(getattr(a, attr) for a in grp) / len(grp), 4)
 
     def _gini(self, with_policy: bool) -> float:
-        return compute_gini([a.income for a in self._group(with_policy)])
+        return compute_gini([a.labour_income for a in self._group(with_policy)])
 
     def _employment(self, with_policy: bool) -> float:
         grp = self._group(with_policy)
@@ -131,6 +157,7 @@ class EconomyModel(Model):
     # ── Public step ───────────────────────────────────────────────────────────
 
     def step(self) -> None:
+        self._group_cache = {}          # invalidate per-step group cache
         self.datacollector.collect(self)
         self.agents.do("step")
         self.current_step += 1
@@ -173,6 +200,22 @@ class EconomyModel(Model):
                 s[f"{label}_control"] = ctrl
                 s[f"{label}_policy"]  = pol
                 s[f"{label}_delta"]   = round(pol - ctrl, 4)
+            # 💡 Innovation, Entrepreneurship, Investment, Fiscal
+            for key in ["innovation", "entrepreneurship", "investment", "fiscal_balance"]:
+                ctrl = float(row.get(f"{key}_control", 0))
+                pol  = float(row.get(f"{key}_policy",  0))
+                s[f"{key}_control"] = ctrl
+                s[f"{key}_policy"]  = pol
+                s[f"{key}_delta"]   = round(pol - ctrl, 4)
+            # GDP year-over-year growth (computed post-hoc on the growing series list)
+            if series:
+                prev = series[-1]
+                s["gdp_growth_control"] = _pct_delta(prev["gdp_control"], float(row["gdp_control"]))
+                s["gdp_growth_policy"]  = _pct_delta(prev["gdp_policy"],  float(row["gdp_policy"]))
+            else:
+                s["gdp_growth_control"] = 0.0
+                s["gdp_growth_policy"]  = 0.0
+            s["gdp_growth_delta"] = round(s["gdp_growth_policy"] - s["gdp_growth_control"], 3)
             series.append(s)
 
         last = series[-1] if series else {}
@@ -216,12 +259,46 @@ class EconomyModel(Model):
                 "mortality_delta":        _lv("mortality_delta"),
                 # 💰 Patrimoine
                 "wealth_gini_delta":      _lv("wealth_gini_delta"),
+                # 💡 Compétitivité
+                "innovation_delta":       _lv("innovation_delta"),
+                "entrepreneurship_delta": _lv("entrepreneurship_delta"),
+                "investment_delta":       _lv("investment_delta"),
+                "fiscal_balance_delta":   _lv("fiscal_balance_delta"),
+                "gdp_growth_delta":       _lv("gdp_growth_delta"),
                 "effect_description": (
                     self.policy.effect_description if self.policy else ""
                 ),
             },
             "series":       series,
+            "validation":   self._validate_calibration(),
             "demographics": self._demo_breakdown(),
+        }
+
+    def _fiscal_balance(self, with_policy: bool) -> float:
+        """Mean net fiscal contribution per agent/month (taxes paid − transfers received)."""
+        grp = self._group(with_policy)
+        if not grp:
+            return 0.0
+        return round(sum(a.fiscal_contribution for a in grp) / len(grp), 2)
+
+    def _validate_calibration(self) -> dict:
+        """
+        Compare t=0 model output against target country profile.
+        Flags calibration drift > 5 pp on Gini or employment rate.
+        """
+        profile      = get_profile(self.country)
+        computed_gini = compute_gini([a.labour_income for a in self._group(False)])
+        computed_emp  = self._employment(False)
+        gini_err = abs(computed_gini - profile.gini)
+        emp_err  = abs(computed_emp  - profile.employment_rate)
+        return {
+            "gini_target":     round(profile.gini, 3),
+            "gini_model":      round(computed_gini, 3),
+            "gini_error":      round(gini_err, 3),
+            "emp_target":      round(profile.employment_rate, 3),
+            "emp_model":       round(computed_emp, 3),
+            "emp_error":       round(emp_err, 3),
+            "calibration_ok":  gini_err < 0.05 and emp_err < 0.05,
         }
 
     def _demo_breakdown(self) -> dict:

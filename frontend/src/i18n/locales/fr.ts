@@ -210,6 +210,24 @@ export const fr = {
     mc_std: 'Écart-type',
     mc_p5: 'P5',
     mc_p95: 'P95',
+
+    tab_competitiveness: 'Compétitivité',
+    metric_innovation: 'Innovation',
+    metric_entrepreneurship: 'Entrepreneuriat',
+    metric_investment: "Taux d'épargne",
+    metric_fiscal_balance: 'Solde fiscal',
+    metric_gdp_growth: 'Croissance PIB',
+    chart_innovation: 'Score innovation (0–1)',
+    chart_entrepreneurship: 'Score entrepreneuriat (0–1)',
+    chart_fiscal_balance: 'Contribution fiscale nette (€/agent/mois)',
+    fiscal_note_title: 'Solde fiscal : taxes − transferts',
+    fiscal_note_body:
+      'Contribution nette par agent : impôts sur le revenu payés moins allocations chômage perçues. '
+      + 'Positif = contributeur net. Calibré sur les taux effectifs OCDE 2023 × pression fiscale pays.',
+    innovation_note_title: 'Sources : OCDE MSTI 2023 · GEM 2023',
+    innovation_note_body:
+      'Innovation : Aghion & Howitt (1992) — capital humain + accès au capital + institutions. '
+      + "Entrepreneuriat : Acs & Audretsch (1990) — capital financier + tolérance au risque + gouvernance.",
   },
 
   errors: {

@@ -25,6 +25,11 @@ interface SeriesPoint {
   mobility_control: number; mobility_policy: number; mobility_delta: number
   mortality_control: number; mortality_policy: number; mortality_delta: number
   wealth_gini_control: number; wealth_gini_policy: number; wealth_gini_delta: number
+  innovation_control: number; innovation_policy: number; innovation_delta: number
+  entrepreneurship_control: number; entrepreneurship_policy: number; entrepreneurship_delta: number
+  investment_control: number; investment_policy: number; investment_delta: number
+  fiscal_balance_control: number; fiscal_balance_policy: number; fiscal_balance_delta: number
+  gdp_growth_control: number; gdp_growth_policy: number; gdp_growth_delta: number
 }
 
 interface SimResults {
@@ -42,6 +47,8 @@ interface SimResults {
     trust_delta: number
     gender_equality_delta: number; discrimination_delta: number; mobility_delta: number
     mortality_delta: number; wealth_gini_delta: number
+    innovation_delta: number; entrepreneurship_delta: number
+    investment_delta: number; fiscal_balance_delta: number; gdp_growth_delta: number
     effect_description: string
   }
   series: SeriesPoint[]
@@ -168,7 +175,7 @@ function AIInterpretation({ results }: { results: SimResults }) {
 
 /* ── Main ───────────────────────────────────────────────────────────────────── */
 
-type Tab = 'economic' | 'education' | 'environment' | 'society' | 'governance'
+type Tab = 'economic' | 'education' | 'environment' | 'society' | 'governance' | 'competitiveness'
 
 export default function SimulationResults({ results }: { results: SimResults }) {
   const { t } = useLanguage()
@@ -191,7 +198,8 @@ export default function SimulationResults({ results }: { results: SimResults }) 
     { id: 'education',    icon: '🎓', label: t.simulation.tab_education },
     { id: 'environment',  icon: '🌱', label: t.simulation.tab_environment },
     { id: 'society',      icon: '🤝', label: t.simulation.tab_society },
-    { id: 'governance',   icon: '🏛', label: t.simulation.tab_governance },
+    { id: 'governance',      icon: '🏛', label: t.simulation.tab_governance },
+    { id: 'competitiveness', icon: '💡', label: t.simulation.tab_competitiveness },
   ]
 
   const sc = meta.scenario ?? 'baseline'
@@ -205,12 +213,14 @@ export default function SimulationResults({ results }: { results: SimResults }) 
 
   // Top-level KPI bar (one per domain)
   const KPI = [
-    { label: t.simulation.metric_gdp,        v: summary.gdp_delta_pct,       u: '%',   g: true  },
-    { label: t.simulation.metric_education,   v: summary.education_delta*100,  u: ' pp', g: true  },
-    { label: t.simulation.metric_carbon,      v: summary.carbon_delta_pct,    u: '%',   g: false },
-    { label: t.simulation.metric_wellbeing,   v: summary.wellbeing_delta*100, u: ' pp', g: true  },
-    { label: t.simulation.metric_health,      v: summary.health_delta*100,    u: ' pp', g: true  },
-    { label: t.simulation.metric_governance,  v: summary.governance_delta*100,u: ' pp', g: true  },
+    { label: t.simulation.metric_gdp,           v: summary.gdp_delta_pct,              u: '%',   g: true,  tab: 'economic'        as Tab },
+    { label: t.simulation.metric_education,      v: summary.education_delta*100,        u: ' pp', g: true,  tab: 'education'       as Tab },
+    { label: t.simulation.metric_carbon,         v: summary.carbon_delta_pct,           u: '%',   g: false, tab: 'environment'     as Tab },
+    { label: t.simulation.metric_wellbeing,      v: summary.wellbeing_delta*100,        u: ' pp', g: true,  tab: 'society'         as Tab },
+    { label: t.simulation.metric_innovation,     v: (summary.innovation_delta??0)*100,  u: ' pp', g: true,  tab: 'competitiveness' as Tab },
+    { label: t.simulation.metric_health,         v: summary.health_delta*100,           u: ' pp', g: true,  tab: 'society'         as Tab },
+    { label: t.simulation.metric_governance,     v: summary.governance_delta*100,       u: ' pp', g: true,  tab: 'governance'      as Tab },
+    { label: t.simulation.metric_fiscal_balance, v: summary.fiscal_balance_delta??0,    u: '€',   g: true,  tab: 'competitiveness' as Tab },
   ]
 
   return (
@@ -246,24 +256,29 @@ export default function SimulationResults({ results }: { results: SimResults }) 
         )}
       </div>
 
-      {/* 6-domain KPI bar */}
-      <div className="grid grid-cols-3 md:grid-cols-6 gap-2">
-        {KPI.map(k => (
-          <button key={k.label}
-            onClick={() => {
-              // map KPI to matching tab
-              if (k.label === t.simulation.metric_gdp) setTab('economic')
-              else if (k.label === t.simulation.metric_education) setTab('education')
-              else if (k.label === t.simulation.metric_carbon) setTab('environment')
-              else if (k.label === t.simulation.metric_wellbeing) setTab('society')
-              else if (k.label === t.simulation.metric_health) setTab('society')
-              else if (k.label === t.simulation.metric_governance) setTab('governance')
-            }}
-            className="bg-white rounded-xl border border-slate-200 p-3 text-center shadow-sm hover:shadow-md transition-shadow cursor-pointer">
-            <div className="text-xs text-slate-500 mb-1.5 truncate">{k.label}</div>
-            <DeltaChip value={k.v} unit={k.u} positiveGood={k.g} size="md" />
-          </button>
-        ))}
+      {/* Compact KPI strip — clickable pills, one per metric */}
+      <div className="flex flex-wrap gap-1.5">
+        {KPI.map(k => {
+          const good  = k.g ? k.v >= 0 : k.v <= 0
+          const sign  = k.v >= 0 ? '+' : ''
+          const chip  = good
+            ? 'bg-emerald-50 text-emerald-700 border-emerald-200'
+            : 'bg-rose-50 text-rose-700 border-rose-200'
+          const abs   = Math.abs(k.v)
+          const disp  = abs === 0 ? '0' : abs < 0.01 ? k.v.toFixed(3) : abs < 1 ? k.v.toFixed(2) : k.v.toFixed(1)
+          return (
+            <button key={k.label} onClick={() => setTab(k.tab)}
+              className="flex items-center gap-1.5 bg-white rounded-lg border border-slate-200
+                         px-2.5 py-1.5 shadow-sm hover:bg-slate-50 transition-colors cursor-pointer">
+              <span className="text-[10px] text-slate-500 whitespace-nowrap font-medium leading-none">
+                {k.label}
+              </span>
+              <span className={`text-[10px] font-bold px-1.5 py-0.5 rounded-full border leading-none ${chip}`}>
+                {sign}{disp}{k.u}
+              </span>
+            </button>
+          )
+        })}
       </div>
 
       {/* Tabs */}
@@ -491,6 +506,41 @@ export default function SimulationResults({ results }: { results: SimResults }) 
                 Gender equality: WEF GGI 2023 · Discrimination: EU FRA MIDIS-II ·
                 Social mobility: Chetty et al. (2014), Corak (2013)
               </p>
+            </div>
+          </>}
+
+          {/* ── 💡 Compétitivité ── */}
+          {tab === 'competitiveness' && <>
+            <div className="grid grid-cols-2 gap-3">
+              {[
+                { label: t.simulation.metric_gdp_growth,      v: (summary.gdp_growth_delta??0),       u: ' pp', g: true },
+                { label: t.simulation.metric_innovation,       v: (summary.innovation_delta??0)*100,    u: ' pp', g: true },
+                { label: t.simulation.metric_entrepreneurship, v: (summary.entrepreneurship_delta??0)*100, u: ' pp', g: true },
+                { label: t.simulation.metric_investment,       v: (summary.investment_delta??0)*100,   u: ' pp', g: true },
+                { label: t.simulation.metric_fiscal_balance,   v: summary.fiscal_balance_delta??0,     u: '€',   g: true },
+              ].map(k => (
+                <div key={k.label} className="bg-slate-50 rounded-xl p-3">
+                  <div className="text-xs text-slate-500 mb-0.5">{k.label}</div>
+                  <DeltaChip value={k.v} unit={k.u} positiveGood={k.g} size="lg" />
+                </div>
+              ))}
+            </div>
+            <TimelineChart data={mk('innovation_control','innovation_policy',100)}
+              label={t.simulation.chart_innovation} color="#f59e0b"
+              formatY={v => `${v.toFixed(1)}%`} />
+            <TimelineChart data={mk('entrepreneurship_control','entrepreneurship_policy',100)}
+              label={t.simulation.chart_entrepreneurship} color="#8b5cf6"
+              formatY={v => `${v.toFixed(1)}%`} />
+            <TimelineChart data={mk('fiscal_balance_control','fiscal_balance_policy')}
+              label={t.simulation.chart_fiscal_balance} color="#0ea5e9"
+              formatY={v => `${Math.round(v)}€`} />
+            <div className="bg-amber-50 border border-amber-200 rounded-xl p-3 text-xs text-amber-800 space-y-1">
+              <p className="font-semibold">{t.simulation.innovation_note_title}</p>
+              <p>{t.simulation.innovation_note_body}</p>
+            </div>
+            <div className="bg-sky-50 border border-sky-200 rounded-xl p-3 text-xs text-sky-800 space-y-1">
+              <p className="font-semibold">{t.simulation.fiscal_note_title}</p>
+              <p>{t.simulation.fiscal_note_body}</p>
             </div>
           </>}
 

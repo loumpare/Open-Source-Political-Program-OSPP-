@@ -9,7 +9,7 @@ import { useLanguage } from '../i18n'
 const COUNTRIES_RAW = Array.from(new Set(PROPOSALS.map(p => p.country))).sort()
 
 export default function Proposals() {
-  const { t } = useLanguage()
+  const { t, lang } = useLanguage()
   const [searchParams, setSearchParams] = useSearchParams()
   const [query, setQuery]   = useState('')
   const [country, setCountry] = useState('__all__')
@@ -40,15 +40,17 @@ export default function Proposals() {
       if (country !== '__all__' && p.country !== country) return false
       if (query) {
         const q = query.toLowerCase()
+        const localTitle = lang === 'fr' ? (p.titleFr ?? p.title) : lang === 'de' ? (p.titleDe ?? p.title) : p.title
+        const localSummary = lang === 'fr' ? (p.summaryFr ?? p.summary) : lang === 'de' ? (p.summaryDe ?? p.summary) : p.summary
         return (
-          p.title.toLowerCase().includes(q) ||
-          p.summary.toLowerCase().includes(q) ||
+          localTitle.toLowerCase().includes(q) ||
+          localSummary.toLowerCase().includes(q) ||
           p.tags.some(tag => tag.toLowerCase().includes(q))
         )
       }
       return true
     })
-  }, [domainParam, country, query, t])
+  }, [domainParam, country, query, lang, t])
 
   return (
     <div className="pt-16 max-w-6xl mx-auto px-4 sm:px-6">

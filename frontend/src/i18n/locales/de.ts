@@ -208,6 +208,24 @@ export const de: Translations = {
     mc_std: 'Standardabw.',
     mc_p5: 'P5',
     mc_p95: 'P95',
+
+    tab_competitiveness: 'Wettbewerb',
+    metric_innovation: 'Innovation',
+    metric_entrepreneurship: 'Unternehmertum',
+    metric_investment: 'Sparquote',
+    metric_fiscal_balance: 'Haushaltssaldo',
+    metric_gdp_growth: 'BIP-Wachstum',
+    chart_innovation: 'Innovations-Score (0–1)',
+    chart_entrepreneurship: 'Unternehmertum-Score (0–1)',
+    chart_fiscal_balance: 'Netto-Fiskalbeitrag (€/Agent/Monat)',
+    fiscal_note_title: 'Haushaltssaldo: Steuern − Transfers',
+    fiscal_note_body:
+      'Nettobeitrag pro Agent: gezahlte Einkommensteuer abzüglich erhaltener Arbeitslosenleistungen. '
+      + 'Positiv = Nettozahler. Kalibriert auf OECD-Effektivsteuersätze 2023 × Steuerbelastung je Land.',
+    innovation_note_title: 'Quellen: OECD MSTI 2023 · GEM 2023',
+    innovation_note_body:
+      'Innovation: Aghion & Howitt (1992) — Humankapital + Kapitalzugang + Institutionen. '
+      + 'Unternehmertum: Acs & Audretsch (1990) — Finanzkapital + Risikobereitschaft + Governance.',
   },
 
   errors: {

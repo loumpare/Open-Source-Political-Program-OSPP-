@@ -208,6 +208,24 @@ export const en: Translations = {
     mc_std: 'Std dev',
     mc_p5: 'P5',
     mc_p95: 'P95',
+
+    tab_competitiveness: 'Competitiveness',
+    metric_innovation: 'Innovation',
+    metric_entrepreneurship: 'Entrepreneurship',
+    metric_investment: 'Savings rate',
+    metric_fiscal_balance: 'Fiscal balance',
+    metric_gdp_growth: 'GDP growth',
+    chart_innovation: 'Innovation score (0–1)',
+    chart_entrepreneurship: 'Entrepreneurship score (0–1)',
+    chart_fiscal_balance: 'Net fiscal contribution (€/agent/month)',
+    fiscal_note_title: 'Fiscal balance: taxes − transfers',
+    fiscal_note_body:
+      'Net contribution per agent: income taxes paid minus unemployment benefits received. '
+      + 'Positive = net contributor. Calibrated on OECD 2023 effective rates × country tax pressure.',
+    innovation_note_title: 'Sources: OECD MSTI 2023 · GEM 2023',
+    innovation_note_body:
+      'Innovation: Aghion & Howitt (1992) — human capital + capital access + institutions. '
+      + 'Entrepreneurship: Acs & Audretsch (1990) — financial capital + risk tolerance + governance.',
   },
 
   errors: {

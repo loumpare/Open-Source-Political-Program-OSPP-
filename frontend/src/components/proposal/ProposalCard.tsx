@@ -2,6 +2,11 @@ import { Link } from 'react-router-dom'
 import { Users, BookOpen, ArrowRight } from 'lucide-react'
 import { Proposal, DOMAIN_META, STATUS_META } from '../../data/proposals'
 import { useVote } from '../../hooks/useVote'
+import { useLanguage } from '../../i18n'
+
+function localizedTitle(p: Proposal, lang: string): string {
+  return lang === 'fr' ? (p.titleFr ?? p.title) : lang === 'de' ? (p.titleDe ?? p.title) : p.title
+}
 
 interface Props { proposal: Proposal }
 
@@ -9,6 +14,7 @@ export default function ProposalCard({ proposal }: Props) {
   const domain = DOMAIN_META[proposal.domain]
   const status = STATUS_META[proposal.status]
   const { supportPct, total } = useVote(proposal.id)
+  const { lang } = useLanguage()
 
   return (
     <Link
@@ -28,6 +34,11 @@ export default function ProposalCard({ proposal }: Props) {
             <span className={`text-xs font-medium px-2.5 py-1 rounded-full ${status.color}`}>
               {status.label}
             </span>
+            {proposal.historical && (
+              <span className="text-xs font-semibold px-2.5 py-1 rounded-full bg-emerald-100 text-emerald-700 border border-emerald-200">
+                📊 Historique
+              </span>
+            )}
           </div>
           <span className="text-lg shrink-0" title={proposal.country}>
             {proposal.countryFlag}
@@ -38,13 +49,13 @@ export default function ProposalCard({ proposal }: Props) {
         <div>
           <p className="text-xs font-mono text-slate-400 mb-1">{proposal.id}</p>
           <h3 className="font-semibold text-slate-900 text-balance leading-snug group-hover:text-slate-700 transition-colors">
-            {proposal.title}
+            {localizedTitle(proposal, lang)}
           </h3>
         </div>
 
         {/* Summary */}
         <p className="text-sm text-slate-500 line-clamp-2 leading-relaxed">
-          {proposal.summary}
+          {lang === 'fr' ? (proposal.summaryFr ?? proposal.summary) : lang === 'de' ? (proposal.summaryDe ?? proposal.summary) : proposal.summary}
         </p>
 
         {/* Vote bar */}

@@ -1,7 +1,13 @@
 import { useState, useMemo } from 'react'
-import { PROPOSALS } from '../../data/proposals'
+import { PROPOSALS, type Proposal } from '../../data/proposals'
 import { API_BASE } from '../../config'
 import { useLanguage } from '../../i18n'
+
+function localTitle(p: Proposal, lang: string): string {
+  return lang === 'fr' ? (p.titleFr ?? p.title)
+       : lang === 'de' ? (p.titleDe ?? p.title)
+       : p.title
+}
 
 const COUNTRY_CODES: Record<string, string> = {
   France: 'fr', 'United States': 'us', Denmark: 'dk', Germany: 'de',
@@ -32,7 +38,7 @@ interface Props {
 }
 
 export default function SimulationLauncher({ onResults, onLoading, onCountryChange }: Props) {
-  const { t } = useLanguage()
+  const { t, lang } = useLanguage()
 
   const [selectedCountry, setSelectedCountry] = useState<string>('')
   const [proposalId, setProposalId]           = useState(PROPOSALS[0].id)
@@ -174,7 +180,7 @@ export default function SimulationLauncher({ onResults, onLoading, onCountryChan
           onChange={e => setProposalId(e.target.value)}
         >
           {filteredProposals.map(p => (
-            <option key={p.id} value={p.id}>[{p.id}] {p.title}</option>
+            <option key={p.id} value={p.id}>[{p.id}] {localTitle(p, lang)}</option>
           ))}
         </select>
         {selected && (

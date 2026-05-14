@@ -43,6 +43,16 @@ class CountryProfile:
     antidiscrimination_index: float = 0.650
     # Intergenerational social mobility (Chetty/Corak rank-rank proxy)
     social_mobility_index: float = 0.550
+    # ── Compétitivité / métriques libérales-conservatrices ───────────────────
+    # R&D intensity: R&D spending as % of GDP, normalized 0–1 (5% = 1.0)
+    # Source: OECD MSTI 2023
+    rd_intensity: float = 0.44
+    # Startup rate: GEM early-stage entrepreneurial activity (TEA), normalized 0–1 (20% = 1.0)
+    # Source: GEM Global Report 2023
+    startup_rate: float = 0.50
+    # Tax pressure: total taxes as % of GDP, normalized 0–1 ((pct-15)/45)
+    # Source: OECD Revenue Statistics 2023
+    tax_pressure: float = 0.50
 
 
 PROFILES: dict[str, CountryProfile] = {
@@ -63,6 +73,7 @@ PROFILES: dict[str, CountryProfile] = {
         education_index=0.74, poverty_line_eur=1063,
         median_wealth_eur=113_000, wealth_sigma=1.9,
         gender_equality_index=0.791, antidiscrimination_index=0.68, social_mobility_index=0.55,
+        rd_intensity=0.444, startup_rate=0.320, tax_pressure=0.675,
     ),
     "us": CountryProfile(
         code="us", name="United States",
@@ -81,6 +92,7 @@ PROFILES: dict[str, CountryProfile] = {
         education_index=0.67, poverty_line_eur=1250,
         median_wealth_eur=79_000, wealth_sigma=2.3,
         gender_equality_index=0.748, antidiscrimination_index=0.62, social_mobility_index=0.45,
+        rd_intensity=0.690, startup_rate=0.800, tax_pressure=0.283,
     ),
     "dk": CountryProfile(
         code="dk", name="Denmark",
@@ -99,6 +111,7 @@ PROFILES: dict[str, CountryProfile] = {
         education_index=0.81, poverty_line_eur=1520,
         median_wealth_eur=165_000, wealth_sigma=1.6,
         gender_equality_index=0.892, antidiscrimination_index=0.82, social_mobility_index=0.82,
+        rd_intensity=0.620, startup_rate=0.310, tax_pressure=0.711,
     ),
     "de": CountryProfile(
         code="de", name="Germany",
@@ -117,6 +130,7 @@ PROFILES: dict[str, CountryProfile] = {
         education_index=0.77, poverty_line_eur=1050,
         median_wealth_eur=70_000, wealth_sigma=2.0,
         gender_equality_index=0.815, antidiscrimination_index=0.72, social_mobility_index=0.60,
+        rd_intensity=0.626, startup_rate=0.375, tax_pressure=0.627,
     ),
     "se": CountryProfile(
         code="se", name="Sweden",
@@ -135,6 +149,7 @@ PROFILES: dict[str, CountryProfile] = {
         education_index=0.82, poverty_line_eur=1600,
         median_wealth_eur=82_000, wealth_sigma=1.6,
         gender_equality_index=0.928, antidiscrimination_index=0.84, social_mobility_index=0.78,
+        rd_intensity=0.680, startup_rate=0.370, tax_pressure=0.740,
     ),
     "no": CountryProfile(
         code="no", name="Norway",
@@ -153,6 +168,7 @@ PROFILES: dict[str, CountryProfile] = {
         education_index=0.82, poverty_line_eur=2100,
         median_wealth_eur=175_000, wealth_sigma=1.6,
         gender_equality_index=0.875, antidiscrimination_index=0.83, social_mobility_index=0.75,
+        rd_intensity=0.394, startup_rate=0.425, tax_pressure=0.693,
     ),
     "fi": CountryProfile(
         code="fi", name="Finland",
@@ -171,6 +187,7 @@ PROFILES: dict[str, CountryProfile] = {
         education_index=0.85, poverty_line_eur=1450,
         median_wealth_eur=97_000, wealth_sigma=1.7,
         gender_equality_index=0.863, antidiscrimination_index=0.81, social_mobility_index=0.74,
+        rd_intensity=0.644, startup_rate=0.410, tax_pressure=0.736,
     ),
     "ca": CountryProfile(
         code="ca", name="Canada",
@@ -189,6 +206,7 @@ PROFILES: dict[str, CountryProfile] = {
         education_index=0.73, poverty_line_eur=1150,
         median_wealth_eur=120_000, wealth_sigma=1.9,
         gender_equality_index=0.770, antidiscrimination_index=0.75, social_mobility_index=0.65,
+        rd_intensity=0.342, startup_rate=0.905, tax_pressure=0.542,
     ),
     "gb": CountryProfile(
         code="gb", name="United Kingdom",
@@ -207,6 +225,7 @@ PROFILES: dict[str, CountryProfile] = {
         education_index=0.72, poverty_line_eur=1100,
         median_wealth_eur=130_000, wealth_sigma=2.0,
         gender_equality_index=0.792, antidiscrimination_index=0.66, social_mobility_index=0.50,
+        rd_intensity=0.344, startup_rate=0.530, tax_pressure=0.556,
     ),
     "jp": CountryProfile(
         code="jp", name="Japan",
@@ -225,6 +244,7 @@ PROFILES: dict[str, CountryProfile] = {
         education_index=0.80, poverty_line_eur=1050,
         median_wealth_eur=103_000, wealth_sigma=1.7,
         gender_equality_index=0.647, antidiscrimination_index=0.70, social_mobility_index=0.62,
+        rd_intensity=0.660, startup_rate=0.305, tax_pressure=0.394,
     ),
     "global": CountryProfile(
         code="global", name="Global",
@@ -243,6 +263,7 @@ PROFILES: dict[str, CountryProfile] = {
         education_index=0.68, poverty_line_eur=800,
         median_wealth_eur=40_000, wealth_sigma=2.2,
         gender_equality_index=0.720, antidiscrimination_index=0.62, social_mobility_index=0.55,
+        rd_intensity=0.500, startup_rate=0.600, tax_pressure=0.444,
     ),
 }
 
