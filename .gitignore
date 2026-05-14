@@ -50,3 +50,12 @@ logs/
 # Research — large binary files (PDFs on Google Drive, vectorDB rebuilt locally)
 research/*/pdfs/
 research/vectordb/
+
+# Database — vote data generated at runtime, never commit
+*.db
+*.sqlite
+*.sqlite3
+
+# Frontend — lock file and dev build artifacts
+frontend/package-lock.json
+frontend/dev-dist/
