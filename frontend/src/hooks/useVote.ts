@@ -1,29 +1,20 @@
 import { useState, useEffect, useCallback } from 'react'
 import { API_BASE } from '../config'
+import { signVote } from '../lib/crypto'
 
 type Vote = 1 | -1 | 0
 
 interface VoteState {
-  support: number
-  oppose:  number
-  total:   number
+  support:    number
+  oppose:     number
+  total:      number
   supportPct: number
   userVote:   Vote
   loading:    boolean
+  cryptoError: boolean
 }
 
 const API = API_BASE
-const TOKEN_KEY = 'ospp_voter_token'
-
-function getToken(): string {
-  let t = localStorage.getItem(TOKEN_KEY)
-  if (!t) {
-    t = crypto.randomUUID?.() ??
-        Math.random().toString(36).slice(2) + Date.now().toString(36)
-    localStorage.setItem(TOKEN_KEY, t)
-  }
-  return t
-}
 
 // Fallback seed counts when the API is offline
 const SEEDS: Record<string, { support: number; oppose: number }> = {
@@ -50,8 +41,7 @@ const SEEDS: Record<string, { support: number; oppose: number }> = {
   'SOC-GB-001':     { support: 788,  oppose: 267 },
 }
 
-// localStorage key for the user's own vote (persisted for UI optimism)
-const USER_VOTE_KEY = 'ospp_user_votes_v3'
+const USER_VOTE_KEY = 'ospp_user_votes_v4'
 
 function getSavedVote(id: string): Vote {
   try {
@@ -72,21 +62,20 @@ function makePct(s: number, o: number) {
   return t > 0 ? Math.round(s / t * 100) : 50
 }
 
-function fallback(id: string, userVote: Vote): VoteState {
+function fallback(id: string, userVote: Vote): Omit<VoteState, 'loading' | 'cryptoError'> {
   const seed = SEEDS[id] ?? { support: 0, oppose: 0 }
   const s = seed.support + (userVote === 1  ? 1 : 0)
   const o = seed.oppose  + (userVote === -1 ? 1 : 0)
-  return { support: s, oppose: o, total: s + o,
-           supportPct: makePct(s, o), userVote, loading: false }
+  return { support: s, oppose: o, total: s + o, supportPct: makePct(s, o), userVote }
 }
 
 export function useVote(proposalId: string) {
   const [state, setState] = useState<VoteState>(() => ({
     ...fallback(proposalId, getSavedVote(proposalId)),
     loading: true,
+    cryptoError: false,
   }))
 
-  // Fetch real counts on mount
   useEffect(() => {
     let alive = true
     fetch(`${API}/votes/${proposalId}`)
@@ -94,23 +83,21 @@ export function useVote(proposalId: string) {
       .then(data => {
         if (!alive || !data) return
         setState(prev => ({
-          support:    data.support,
-          oppose:     data.oppose,
-          total:      data.total,
-          supportPct: data.support_pct,
-          userVote:   prev.userVote,
-          loading:    false,
+          support:     data.support,
+          oppose:      data.oppose,
+          total:       data.total,
+          supportPct:  data.support_pct,
+          userVote:    prev.userVote,
+          loading:     false,
+          cryptoError: prev.cryptoError,
         }))
       })
-      .catch(() => {
-        if (!alive) return
-        setState(prev => ({ ...prev, loading: false }))
-      })
+      .catch(() => { if (alive) setState(prev => ({ ...prev, loading: false })) })
     return () => { alive = false }
   }, [proposalId])
 
   const vote = useCallback(async (v: 1 | -1) => {
-    const isUndo  = state.userVote === v
+    const isUndo   = state.userVote === v
     const newVote: Vote = isUndo ? 0 : v
 
     // Optimistic update
@@ -119,32 +106,37 @@ export function useVote(proposalId: string) {
     const do_ = (newVote === -1 ? 1 : 0) - (prev.userVote === -1 ? 1 : 0)
     const s = prev.support + ds
     const o = prev.oppose  + do_
-    setState({
-      support: s, oppose: o, total: s + o,
-      supportPct: makePct(s, o), userVote: newVote, loading: false,
-    })
+    setState({ support: s, oppose: o, total: s + o,
+               supportPct: makePct(s, o), userVote: newVote,
+               loading: false, cryptoError: false })
     saveVote(proposalId, newVote)
 
-    // Submit to API
+    // Sign and submit
     try {
+      const signed = await signVote(proposalId, newVote)
       const res = await fetch(`${API}/votes/${proposalId}`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ voter_token: getToken(), value: newVote }),
+        body: JSON.stringify({ ...signed, value: newVote }),
       })
       if (res.ok) {
         const data = await res.json()
         setState(prev2 => ({
-          support:    data.support,
-          oppose:     data.oppose,
-          total:      data.total,
-          supportPct: data.support_pct,
-          userVote:   prev2.userVote,
-          loading:    false,
+          support:     data.support,
+          oppose:      data.oppose,
+          total:       data.total,
+          supportPct:  data.support_pct,
+          userVote:    prev2.userVote,
+          loading:     false,
+          cryptoError: false,
         }))
       }
-    } catch {
-      // API offline — optimistic update stays, will sync on next load
+    } catch (err) {
+      // If Web Crypto API is unavailable (non-HTTPS / old browser), flag it
+      const isCryptoErr = err instanceof Error &&
+        (err.name === 'NotSupportedError' || err.message.includes('subtle'))
+      if (isCryptoErr) setState(prev2 => ({ ...prev2, cryptoError: true }))
+      // Otherwise: API offline — optimistic update stays
     }
   }, [proposalId, state])
 

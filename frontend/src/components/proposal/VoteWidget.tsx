@@ -4,7 +4,7 @@ import { useVote } from '../../hooks/useVote'
 interface Props { proposalId: string }
 
 export default function VoteWidget({ proposalId }: Props) {
-  const { support, oppose, total, supportPct, userVote, vote } = useVote(proposalId)
+  const { support, oppose, total, supportPct, userVote, vote, cryptoError } = useVote(proposalId)
 
   return (
     <div className="rounded-2xl border border-slate-200 bg-white p-6 space-y-5">
@@ -60,8 +60,14 @@ export default function VoteWidget({ proposalId }: Props) {
         </p>
       )}
 
+      {cryptoError && (
+        <p className="text-center text-xs text-amber-600 bg-amber-50 rounded-lg px-2 py-1">
+          HTTPS required for cryptographic votes
+        </p>
+      )}
+
       <p className="text-xs text-slate-400 text-center pt-1">
-        No account needed · Anonymous · Stored locally
+        No account needed · Cryptographic · Anonymous
       </p>
     </div>
   )

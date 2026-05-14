@@ -12,11 +12,13 @@ Ollama must be running: ollama serve
 """
 
 import asyncio
+import base64
 import hashlib
 import json
 import os
 import sqlite3
 import sys
+import time
 from contextlib import contextmanager
 from pathlib import Path
 from typing import AsyncIterator
@@ -117,10 +119,75 @@ def _db():
         conn.close()
 
 
-def _voter_hash(proposal_id: str, raw_token: str) -> str:
-    """One-way hash: (proposal_id, raw_token) → stored ID. Token never persisted."""
+def _b64url_to_int(s: str) -> int:
+    """Decode a base64url-encoded JWK coordinate to an integer."""
+    pad = 4 - len(s) % 4
+    return int.from_bytes(base64.urlsafe_b64decode(s + ("=" * pad if pad != 4 else "")), "big")
+
+
+def _p1363_to_der(sig: bytes) -> bytes:
+    """Convert IEEE P1363 ECDSA signature (r‖s, 64 bytes) to DER format."""
+    r = int.from_bytes(sig[:32], "big")
+    s = int.from_bytes(sig[32:], "big")
+
+    def _enc(n: int) -> bytes:
+        b = n.to_bytes((n.bit_length() + 7) // 8, "big")
+        if b[0] & 0x80:
+            b = b"\x00" + b
+        return bytes([0x02, len(b)]) + b
+
+    r_enc, s_enc = _enc(r), _enc(s)
+    return bytes([0x30, len(r_enc) + len(s_enc)]) + r_enc + s_enc
+
+
+def verify_ecdsa_vote(
+    proposal_id: str,
+    value: int,
+    timestamp: int,
+    public_key_jwk: dict,
+    signature_b64: str,
+) -> str:
+    """
+    Verify an ECDSA-P256 vote signature from the browser's Web Crypto API.
+    Returns the voter_hash (SHA-256 of public key coords) on success.
+    Raises ValueError on any verification failure.
+    """
+    from cryptography.hazmat.primitives.asymmetric.ec import (
+        ECDSA, SECP256R1, EllipticCurvePublicNumbers,
+    )
+    from cryptography.hazmat.primitives import hashes
+    from cryptography.exceptions import InvalidSignature
+
+    # ── Timestamp freshness: ±5 min ──────────────────────────────────────────
+    now_ms = int(time.time() * 1000)
+    if abs(now_ms - timestamp) > 5 * 60 * 1000:
+        raise ValueError("Vote timestamp expired (±5 min window)")
+
+    # ── Validate JWK key type ────────────────────────────────────────────────
+    if public_key_jwk.get("kty") != "EC" or public_key_jwk.get("crv") != "P-256":
+        raise ValueError("Only P-256 EC keys are accepted")
+
+    # ── Reconstruct public key from JWK x / y coordinates ───────────────────
+    x = _b64url_to_int(public_key_jwk["x"])
+    y = _b64url_to_int(public_key_jwk["y"])
+    pub = EllipticCurvePublicNumbers(x, y, SECP256R1()).public_key()
+
+    # ── Decode signature: base64 → bytes → P1363 → DER ──────────────────────
+    sig_bytes = base64.b64decode(signature_b64)
+    if len(sig_bytes) != 64:
+        raise ValueError("Invalid signature length (expected 64 bytes for P-256)")
+    der_sig = _p1363_to_der(sig_bytes)
+
+    # ── Verify ───────────────────────────────────────────────────────────────
+    message = f"{proposal_id}:{value}:{timestamp}".encode()
+    try:
+        pub.verify(der_sig, message, ECDSA(hashes.SHA256()))
+    except InvalidSignature:
+        raise ValueError("Invalid ECDSA signature")
+
+    # ── Voter hash: SHA-256 of public key coordinates (anonymous identifier) ─
     return hashlib.sha256(
-        f"{proposal_id}:{raw_token}".encode()
+        f"{public_key_jwk['x']}:{public_key_jwk['y']}".encode()
     ).hexdigest()
 
 
@@ -422,8 +489,10 @@ async def ask(request: Request, req: AskRequest):
 # ── Vote endpoints ───────────────────────────────────────────────────────────
 
 class VoteRequest(BaseModel):
-    voter_token: str   # raw token from browser — never stored as-is
-    value: int         # 1 = support, -1 = oppose, 0 = remove
+    public_key_jwk: dict   # ECDSA P-256 public key in JWK format
+    signature:      str    # base64-encoded IEEE P1363 signature
+    timestamp:      int    # ms since epoch (used in signed message)
+    value:          int    # 1 = support, -1 = oppose, 0 = remove
 
 
 @app.get("/votes/{proposal_id}")
@@ -432,13 +501,21 @@ def vote_get(proposal_id: str):
 
 
 @app.post("/votes/{proposal_id}")
-def vote_post(proposal_id: str, req: VoteRequest):
+@limiter.limit("30/minute")
+def vote_post(request: Request, proposal_id: str, req: VoteRequest):
     if req.value not in (1, -1, 0):
         raise HTTPException(400, "value must be 1, -1, or 0")
-    if not req.voter_token:
-        raise HTTPException(400, "voter_token required")
 
-    vh = _voter_hash(proposal_id, req.voter_token)
+    try:
+        vh = verify_ecdsa_vote(
+            proposal_id,
+            req.value,
+            req.timestamp,
+            req.public_key_jwk,
+            req.signature,
+        )
+    except ValueError as exc:
+        raise HTTPException(400, str(exc))
 
     with _db() as conn:
         if req.value == 0:
