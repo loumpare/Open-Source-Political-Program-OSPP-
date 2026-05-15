@@ -211,6 +211,18 @@ export const fr = {
     mc_p5: 'P5',
     mc_p95: 'P95',
 
+    subtab_historical: '📜 Lois passées',
+    subtab_proposals:  '🔬 Lois proposées',
+    hist_intro:        'Simulez une politique réelle, puis comparez avec ce qui s\'est vraiment passé.',
+    hist_select_prompt:'Choisissez une loi historique pour lancer la simulation.',
+    hist_compare_title:'Simulation vs Réalité',
+    hist_model_label:  '🔬 Prédiction du modèle',
+    hist_reality_label:'📊 Ce qui s\'est passé',
+    hist_synthesis:    'Synthèse documentée',
+    hist_period:       'Période',
+    hist_context:      'Contexte',
+    hist_disclaimer:   'Ce modèle est une simplification — les écarts avec la réalité sont normaux et pédagogiques.',
+
     tab_competitiveness: 'Compétitivité',
     metric_innovation: 'Innovation',
     metric_entrepreneurship: 'Entrepreneuriat',

@@ -209,6 +209,18 @@ export const en: Translations = {
     mc_p5: 'P5',
     mc_p95: 'P95',
 
+    subtab_historical: '📜 Past Policies',
+    subtab_proposals:  '🔬 Proposed Policies',
+    hist_intro:        'Simulate a real-world policy, then compare with what actually happened.',
+    hist_select_prompt:'Choose a historical policy to run the simulation.',
+    hist_compare_title:'Simulation vs Reality',
+    hist_model_label:  '🔬 Model Prediction',
+    hist_reality_label:'📊 What Actually Happened',
+    hist_synthesis:    'Documented Summary',
+    hist_period:       'Period',
+    hist_context:      'Context',
+    hist_disclaimer:   'This model is a simplification — differences from reality are normal and educational.',
+
     tab_competitiveness: 'Competitiveness',
     metric_innovation: 'Innovation',
     metric_entrepreneurship: 'Entrepreneurship',

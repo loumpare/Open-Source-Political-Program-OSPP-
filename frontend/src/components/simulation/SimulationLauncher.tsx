@@ -35,13 +35,18 @@ interface Props {
   onLoading: (v: boolean) => void
   /** Called whenever the selected country changes — used by parent for the globe */
   onCountryChange?: (flag: string, name: string) => void
+  /** If set, only show proposals matching this predicate */
+  proposalFilter?: (p: (typeof PROPOSALS)[0]) => boolean
+  /** Pre-select a specific proposal id on mount */
+  defaultProposalId?: string
 }
 
-export default function SimulationLauncher({ onResults, onLoading, onCountryChange }: Props) {
+export default function SimulationLauncher({ onResults, onLoading, onCountryChange, proposalFilter, defaultProposalId }: Props) {
   const { t, lang } = useLanguage()
 
+  const baseProposals = proposalFilter ? PROPOSALS.filter(proposalFilter) : PROPOSALS
   const [selectedCountry, setSelectedCountry] = useState<string>('')
-  const [proposalId, setProposalId]           = useState(PROPOSALS[0].id)
+  const [proposalId, setProposalId]           = useState(defaultProposalId ?? baseProposals[0]?.id ?? PROPOSALS[0].id)
   const [nAgents, setNAgents]                 = useState(10_000)
   const [years, setYears]                     = useState(5)
   const [scenario, setScenario]               = useState('baseline')
@@ -49,11 +54,12 @@ export default function SimulationLauncher({ onResults, onLoading, onCountryChan
   const [running, setRunning]                 = useState(false)
   const [error, setError]                     = useState('')
 
-  // Filter proposals by selected country
+  // Filter proposals by selected country (and optional predicate)
   const filteredProposals = useMemo(() => {
-    if (!selectedCountry) return PROPOSALS
-    return PROPOSALS.filter(p => p.country === selectedCountry)
-  }, [selectedCountry])
+    if (!selectedCountry) return baseProposals
+    return baseProposals.filter(p => p.country === selectedCountry)
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [selectedCountry, proposalFilter])
 
   const hasProposals = filteredProposals.length > 0
   const selected = filteredProposals.find(p => p.id === proposalId)

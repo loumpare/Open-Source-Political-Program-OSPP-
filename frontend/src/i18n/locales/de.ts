@@ -209,6 +209,18 @@ export const de: Translations = {
     mc_p5: 'P5',
     mc_p95: 'P95',
 
+    subtab_historical: '📜 Vergangene Gesetze',
+    subtab_proposals:  '🔬 Vorgeschlagene Gesetze',
+    hist_intro:        'Simulieren Sie eine reale Politik und vergleichen Sie sie mit dem, was tatsächlich passiert ist.',
+    hist_select_prompt:'Wählen Sie eine historische Politik, um die Simulation zu starten.',
+    hist_compare_title:'Simulation vs. Realität',
+    hist_model_label:  '🔬 Modellvorhersage',
+    hist_reality_label:'📊 Was wirklich geschah',
+    hist_synthesis:    'Dokumentierte Zusammenfassung',
+    hist_period:       'Zeitraum',
+    hist_context:      'Kontext',
+    hist_disclaimer:   'Dieses Modell ist eine Vereinfachung — Abweichungen von der Realität sind normal und lehrreich.',
+
     tab_competitiveness: 'Wettbewerb',
     metric_innovation: 'Innovation',
     metric_entrepreneurship: 'Unternehmertum',
