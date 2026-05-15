@@ -85,7 +85,7 @@ function DeltaChip({
 /* ── AI Interpretation ─────────────────────────────────────────────────────── */
 
 function AIInterpretation({ results }: { results: SimResults }) {
-  const { t } = useLanguage()
+  const { t, lang } = useLanguage()
   const [text, setText]     = useState('')
   const [status, setStatus] = useState<'idle' | 'loading' | 'done' | 'error'>('idle')
   const abortRef            = useRef<(() => void) | null>(null)
@@ -99,7 +99,7 @@ function AIInterpretation({ results }: { results: SimResults }) {
       const res = await fetch(`${API}/simulate/interpret`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ summary: results.summary, meta: results.meta }),
+        body: JSON.stringify({ summary: results.summary, meta: results.meta, lang }),
       })
       if (!res.ok) throw new Error(`HTTP ${res.status}`)
       const reader  = res.body!.getReader()

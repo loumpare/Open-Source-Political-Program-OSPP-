@@ -178,7 +178,8 @@ export default function Simulations() {
       {!loading && !mcLoading && results !== null && simTab === 'historical' && selectedHistProp?.historicalOutcomes && (
         <HistoricalComparison
           proposal={selectedHistProp}
-          summary={(results as { summary: Parameters<typeof HistoricalComparison>[0]['summary'] }).summary}
+          summary={(results as { summary: Parameters<typeof HistoricalComparison>[0]['summary']; meta: Parameters<typeof HistoricalComparison>[0]['meta'] }).summary}
+          meta={(results as { summary: Parameters<typeof HistoricalComparison>[0]['summary']; meta: Parameters<typeof HistoricalComparison>[0]['meta'] }).meta}
         />
       )}
 
